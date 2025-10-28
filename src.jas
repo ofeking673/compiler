@@ -1,0 +1,5 @@
+let var: string = "Hello, world!"
+let var2 : int = 1 * (2 + 3)
+let var3 : int = 1 + var2
+let 123 : int = 10
+let var4 : int = 1 + 123.123

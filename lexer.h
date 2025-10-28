@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <string>
 #include <vector>
@@ -15,6 +16,27 @@ enum class TokenType {
   PUNCTUATION,
   END
 };
+
+std::string getTokenTypeName(TokenType type) {
+  switch (type) {
+    case TokenType::KEYWORD:
+      return "Keyword";
+    case TokenType::IDENTIFIER:
+      return "Identifier";
+    case TokenType::TYPE_IDENTIFIER:
+      return "Type Identifier";
+    case TokenType::LITERAL:
+      return "Literal";
+    case TokenType::OPERATOR:
+      return "Operator";
+    case TokenType::PUNCTUATION:
+      return "Punctuation";
+    case TokenType::END:
+      return "EOF";
+    default:
+      return "INVALID";
+  }
+}
 
 struct Token {
   TokenType type;
@@ -47,8 +69,13 @@ public:
     if (isdigit(c)) {
       string num;
       while (isdigit(peek())) num += get();
+        if (peek() == '.') {
+          num += get(); // consume '.'
+          while (isdigit(peek())) num += get();
+       }
       return {TokenType::LITERAL, num};
     }
+
 
         // String literal (optional)
     if (c == '"') {

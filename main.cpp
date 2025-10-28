@@ -1,15 +1,28 @@
 #include "lexer.h"
+#include "fileIO.h"
+#include "Parser.h"
 
 int main() {
-  string src = R"(
-    fn greet(name: str) -> str {
-      return "Hello"
-    }
-  )";
+  FileIO file;
+  string source = file.readFile("src.jas");
+  
+  Lexer lexer(source);
+  std::vector<Token> tokens;
 
-  Lexer lexer(src);
-  Token tok;
-  while ((tok = lexer.next()).type != TokenType::END) {
-    std::cout << "Token(" << (int)tok.type << ", \"" << tok.value << "\")\n";
+  while (true) {
+    Token tok = lexer.next();
+    std::cout << tok.value << std::endl;
+    tokens.push_back(tok);
+
+    if (tok.type == TokenType::END)
+       break;
   }
+  
+  Parser parser(tokens);
+  
+  auto program = parser.parseProgram();
+  program->print();
+
+  return 0;
 }
+
