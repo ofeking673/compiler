@@ -4,20 +4,18 @@
 
 int main() {
   FileIO file;
-  string source = file.readFile("src.jas");
+  string source = file.readFile("src.fg");
   
   Lexer lexer(source);
   std::vector<Token> tokens;
 
   while (true) {
     Token tok = lexer.next();
-    std::cout << tok.value << std::endl;
     tokens.push_back(tok);
 
     if (tok.type == TokenType::END)
        break;
   }
-  
   Parser parser(tokens);
   
   auto program = parser.parseProgram();

@@ -8,7 +8,7 @@ public:
   Token consumeToken(TokenType type, const std::string& value = "") {
     Token tok = peek();
     if(tok.type != type)
-      throw std::runtime_error("Unexpected token type: " + (int)tok.type);
+      throw std::runtime_error("Unexpected token type: " + std::to_string(static_cast<int>(tok.type)) + "\nExpected was: " + std::to_string((int)type) + "\nValue was: " + tok.value);
     if(!value.empty() && tok.value != value)
       throw std::runtime_error("Unexpected token value: " + tok.value);
     return consume();
@@ -50,20 +50,73 @@ public:
 
     // Keep parsing statements until the end-of-file token
     while (peek().type != TokenType::END) {
-        program->stmt.push_back(parseStatement());
+      auto stmt = parseStatement();  
+      if(stmt) program->stmt.push_back(std::move(stmt));
     }
 
     return program;
   }
   
   std::unique_ptr<Stmt> parseStatement() {
+    if (peek().type == TokenType::END) 
+      return nullptr;
+
     if (peek().type == TokenType::KEYWORD && peek().value == "let") {
         return parseVarDecl();
+    }
+    else if (peek().type == TokenType::KEYWORD && peek().value == "fn") {
+      return parseFunction();
     }
 
     // For now, fallback: treat any expression as an expression statement
     auto expr = parseExpression();
     return std::make_unique<ExprStmt>(std::move(expr));
+  }
+  
+  std::unique_ptr<Stmt> parseFunction() {
+    consumeToken(TokenType::KEYWORD, "fn");
+    std::string funcName = consume().value;
+    
+    consumeToken(TokenType::PUNCTUATION, "(");
+    std::vector<Parameter> params;
+
+    while(!(peek().type == TokenType::PUNCTUATION && peek().value == ")")) {
+      std::string paramName = consume().value;
+      consumeToken(TokenType::PUNCTUATION, ":");
+      std::string paramType = consume().value;
+
+      params.emplace_back(paramName, paramType);
+
+      if(peek().type == TokenType::PUNCTUATION && peek().value == ",") {
+        consume();
+      }
+      else {
+        break;
+      }
+
+    }
+    consumeToken(TokenType::PUNCTUATION, ")");
+    
+    // Parse return type
+    consumeToken(TokenType::OPERATOR, "->");
+    std::string returnType = consume().value;
+    
+    auto body = parseBlock();
+    return std::make_unique<FuncDeclStmt>(funcName, params, returnType, std::move(body));
+  }
+
+  std::unique_ptr<codeBlock> parseBlock() {
+    consumeToken(TokenType::PUNCTUATION, "{");
+    
+    auto block = std::make_unique<codeBlock>();
+
+    while(!(peek().type == TokenType::PUNCTUATION && peek().value == "}")) {
+      auto stmt = parseStatement();
+      block->addStmt(std::move(stmt));
+    }
+    
+    consumeToken(TokenType::PUNCTUATION, "}");
+    return block;
   }
 
   std::unique_ptr<Expr> parseTerm() {

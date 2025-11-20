@@ -1,5 +1,13 @@
 #include "ASTNode.h"
 #include <memory>
+
+struct Parameter {
+  std::string name;
+  std::string type;
+
+  Parameter(const std::string& n, const std::string& t) : name(n), type(t) {}
+};
+
 class Expr : public ASTNode {
 };
 
@@ -40,7 +48,7 @@ public:
     op(oper), left(std::move(lhs)), right(std::move(rhs)) { }
 
   virtual void print(int indent = 0) const override 
-  {
+  { 
     printIndent(indent);
     std::cout << "BinaryOp(" << op << ")\n"; 
     if(left) left->print(indent + 2);

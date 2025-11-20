@@ -1,5 +1,6 @@
 #include "Expr.h"
 #include <memory>
+#include <optional>
 
 class Stmt : public ASTNode {
 };
@@ -22,6 +23,40 @@ public:
       value->print(indent+4);
     }
   }
+};
+
+
+struct codeBlock {
+  std::vector<std::unique_ptr<Stmt>> stmts;
+
+  void addStmt(std::unique_ptr<Stmt> stmt) {
+    stmts.push_back(std::move(stmt));
+  }
+
+  void print(int indent=0) const {
+    std::cout << "{\n";
+    for(const auto& stmt: stmts) {
+      stmt->print(indent);
+    }
+    std::cout << "}\n";
+  }
+};
+
+class FuncDeclStmt : public Stmt {
+public:
+  std::string name;
+  std::vector<Parameter> params;
+  std::string returnType;
+  std::unique_ptr<codeBlock> body;
+
+  FuncDeclStmt(const std::string& n, const std::vector<Parameter>& par, const std::string& ret, std::unique_ptr<codeBlock> b = {}
+               ) : name(n), params(par), returnType(ret), body(std::move(b)) {}
+
+  void print(int indent = 0) const override {
+    printIndent(indent);
+    std::cout << "FuncStmt (" + name + ", " + returnType + "):\n";
+    if(body) body->print(indent+2);
+  } 
 };
 
 class ExprStmt : public Stmt {
