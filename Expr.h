@@ -18,6 +18,10 @@ public:
   virtual void print(int indent = 0) const override {
     printIndent(indent);
     std::cout << "NumberExpr(" << value << ")\n";}
+
+  virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+    return Type::INT; // Assuming all numbers are ints
+  }
 };
 
 class StringExpr : public Expr {
@@ -27,6 +31,10 @@ public:
   virtual void print(int indent = 0) const override {
     printIndent(indent);
     std::cout << "StringExpr(" << value << ")\n";}
+
+  virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+    return Type::STRING;
+  }
 };
 
 class VariableExpr : public Expr {
@@ -36,6 +44,14 @@ public:
   virtual void print(int indent = 0) const override {
     printIndent(indent);
     std::cout << "VariableExpr(" << name << ")\n";}
+
+  virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+    Symbol* sym = symTable->lookup(name);
+    if(!sym) {
+      throw std::runtime_error("Undefined variable: " + name);
+    }
+    return sym->type;
+  }
 };
 
 class BinaryExpr : public Expr {
@@ -53,5 +69,16 @@ public:
     std::cout << "BinaryOp(" << op << ")\n"; 
     if(left) left->print(indent + 2);
     if(right) right->print(indent + 2);
+  }
+
+  virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+    Type leftType = left->analyzeAst(symTable);
+    Type rightType = right->analyzeAst(symTable);
+
+    if(leftType != rightType) {
+      throw std::runtime_error("Type mismatch in binary expression");
+    }
+
+    return leftType; // Assuming both sides are of the same type
   }
 };

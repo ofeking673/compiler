@@ -12,4 +12,10 @@ public:
       stm->print(indent+2);
     }
   }
+  virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+    for(const auto& stm : stmt) {
+      stm->analyzeAst(symTable);
+    }
+    return Type::VOID;
+  }
 };
