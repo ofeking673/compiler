@@ -67,6 +67,11 @@ public:
     else if (peek().type == TokenType::KEYWORD && peek().value == "fn") {
       return parseFunction();
     }
+    else if (peek().type == TokenType::KEYWORD && peek().value == "return") {
+      consume(); // consume 'return'
+      auto expr = parseExpression();
+      return std::make_unique<ReturnStmt>(std::move(expr));
+    }
 
     // For now, fallback: treat any expression as an expression statement
     auto expr = parseExpression();
