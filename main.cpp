@@ -12,14 +12,22 @@ int main() {
   while (true) {
     Token tok = lexer.next();
     tokens.push_back(tok);
-
+    //std::cout << (int)tok.type << " - " << tok.value << std::endl;
     if (tok.type == TokenType::END)
        break;
   }
   Parser parser(tokens);
   
   auto program = parser.parseProgram();
-  program->print();
+  
+  try {
+    program->analyzeAst(std::make_shared<SymbolTable>());
+    std::cout << "Semantic analysis completed successfully." << std::endl;
+    program->print();
+  }
+  catch (const std::runtime_error& e) {
+    std::cerr << "Semantic analysis failed: " << e.what() << std::endl;
+  }
 
   return 0;
 }
