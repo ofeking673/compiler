@@ -25,17 +25,14 @@ public:
   std::unique_ptr<Stmt> parseVarDecl() {
     consume(); // consume 'let'
 
-    // variable name
     string name = consume().value;
 
-    // colon
     if (consume().value != ":")
       throw std::runtime_error("Expected ':' in variable declaration");
 
     // type
     string typeName = consume().value;
 
-    // equals
     if (consume().value != "=")
       throw std::runtime_error("Expected '=' in variable declaration");
 
@@ -48,7 +45,6 @@ public:
   std::unique_ptr<Program> parseProgram() {
     auto program = std::make_unique<Program>();
 
-    // Keep parsing statements until the end-of-file token
     while (peek().type != TokenType::END) {
       auto stmt = parseStatement();  
       if(stmt) program->stmt.push_back(std::move(stmt));
@@ -72,7 +68,24 @@ public:
       auto expr = parseExpression();
       return std::make_unique<ReturnStmt>(std::move(expr));
     }
+    else if (peek().type == TokenType::IDENTIFIER) {
+        // Could be an expression statement (e.g., function call) or assignment
+        auto expr = parseExpression();
+        if (peek().type == TokenType::OPERATOR && peek().value == "=") {
+            consume(); // consume '='
+            auto value = parseExpression();
+            if (auto varExpr = dynamic_cast<VariableExpr*>(expr.get())) {
+                return std::make_unique<AssignStmt>(varExpr->name, std::move(value));
+            }
+            else {
+                throw std::runtime_error("Left-hand side of assignment must be a variable");
+            }
+        }
 
+        // If it's not an assignment, treat it as an expression statement
+        // Expr is an FuncCallExpr
+        return std::make_unique<ExprStmt>(std::move(expr));
+    }
     // For now, fallback: treat any expression as an expression statement
     auto expr = parseExpression();
     return std::make_unique<ExprStmt>(std::move(expr));
@@ -98,7 +111,6 @@ public:
       else {
         break;
       }
-
     }
     consumeToken(TokenType::PUNCTUATION, ")");
     
@@ -148,7 +160,10 @@ public:
 
   std::unique_ptr<Expr> parseFactor() {
     Token tok = peek();
+    std::string name;
     switch(tok.type) {
+      case TokenType::END:
+        return nullptr; // For extreme cases of unclosed parenthesis, etc.
       case TokenType::LITERAL:
         consume();
         if(isNumber(tok.value))
@@ -156,7 +171,28 @@ public:
         else
           return std::make_unique<StringExpr>(tok.value);
       case TokenType::IDENTIFIER:
-        consume();
+          name = tok.value;
+          consume();
+
+          if (peek().type == TokenType::PUNCTUATION && peek().value == "(")
+          {
+            consume(); // consume '('
+			std::vector<std::unique_ptr<Expr>> args;
+
+			if (!(peek().type == TokenType::PUNCTUATION && peek().value == ")")) {
+			  while (true) {
+				args.push_back(parseExpression());
+				if (peek().type == TokenType::PUNCTUATION && peek().value == ",") {
+				  consume(); // consume ','
+				} else {
+				  break;
+				}
+			  }
+			}
+			consumeToken(TokenType::PUNCTUATION, ")");
+
+			return std::make_unique<FuncCallExpr>(name, std::move(args));
+          }
         return std::make_unique<VariableExpr>(tok.value);
       case TokenType::PUNCTUATION:
         if(tok.value == "(")

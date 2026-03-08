@@ -43,7 +43,7 @@ public:
   VariableExpr(std::string n) : name(n) {}
   virtual void print(int indent = 0) const override {
     printIndent(indent);
-    std::cout << "VariableExpr(" << name << ")\n";}
+    std::cout << "VariableExpr(" << name << ")\n"; }
 
   virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
     Symbol* sym = symTable->lookup(name);
@@ -81,4 +81,42 @@ public:
 
     return leftType; // Assuming both sides are of the same type
   }
+};
+
+class FuncCallExpr : public Expr {
+public:
+    std::string funcName;
+    std::vector<std::unique_ptr<Expr>> args;
+
+    FuncCallExpr(const std::string& name, std::vector<std::unique_ptr<Expr>> arguments) :
+        funcName(name), args(std::move(arguments)) {}
+
+    virtual void print(int indent = 0) const override {
+        printIndent(indent);
+        std::cout << "FuncCall(" << funcName << ")\n";
+        for (const auto& arg : args) {
+            arg->print(indent + 2);
+        }
+    }
+
+    virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+        Symbol* sym = symTable->lookup(funcName);
+        if (!sym || !sym->isFunction) {
+            throw std::runtime_error("Undefined function: " + funcName);
+        }
+
+        if (args.size() != sym->paramTypes.size()) {
+            throw std::runtime_error("Argument count mismatch in function call to " + funcName);
+        }
+
+        for (size_t i = 0; i < args.size(); ++i) {
+            Type argType = args[i]->analyzeAst(symTable);
+            if (argType != sym->paramTypes[i]) {
+                throw std::runtime_error("Argument type mismatch in function call to " + funcName);
+            }
+        }
+
+
+        return sym->type;
+    }
 };

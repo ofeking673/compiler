@@ -15,6 +15,9 @@ struct Symbol {
     std::string name;
     Type type;
     bool isInitialized;
+    bool isFunction;
+    std::vector<Type> paramTypes;
+
 };
 
 class SymbolTable {

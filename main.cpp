@@ -4,7 +4,7 @@
 
 int main() {
   FileIO file;
-  string source = file.readFile("src.fg");
+  string source = file.readFile("C:\\Users\\User\\compiler\\src.fg");
   
   Lexer lexer(source);
   std::vector<Token> tokens;
@@ -12,7 +12,7 @@ int main() {
   while (true) {
     Token tok = lexer.next();
     tokens.push_back(tok);
-    //std::cout << (int)tok.type << " - " << tok.value << std::endl;
+    std::cout << (int)tok.type << " - " << tok.value << std::endl;
     if (tok.type == TokenType::END)
        break;
   }

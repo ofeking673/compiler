@@ -1,3 +1,9 @@
-fn hello(a: int) -> int {
-  let a: int = 5*3
+fn func(a: int, b : str) -> int {
+  let c: int = 1
+  a = 2
+  return a
 }
+
+let b: str = "Hello, World!"
+let a: int = 2
+func(a, b)
