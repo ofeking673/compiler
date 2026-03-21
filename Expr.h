@@ -1,4 +1,6 @@
+#pragma once
 #include "ASTNode.h"
+#include "Stmt.h"
 #include <memory>
 
 struct Parameter {
@@ -9,18 +11,26 @@ struct Parameter {
 };
 
 class Expr : public ASTNode {
+public:
+  virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override { return Type::VOID; }
+  virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {}
 };
 
 class NumberExpr : public Expr {
 public:
-  double value;
-  NumberExpr(double val) : value(val) {}
+  int value;
+  NumberExpr(int val) : value(val) {}
+
   virtual void print(int indent = 0) const override {
     printIndent(indent);
     std::cout << "NumberExpr(" << value << ")\n";}
 
   virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
-    return Type::INT; // Assuming all numbers are ints
+    return Type::NUM;
+  }
+
+  virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
+	  codeGen.lastValue = std::to_string(value);
   }
 };
 
@@ -28,6 +38,7 @@ class StringExpr : public Expr {
 public:
   std::string value;
   StringExpr(std::string val) : value(val) {}
+
   virtual void print(int indent = 0) const override {
     printIndent(indent);
     std::cout << "StringExpr(" << value << ")\n";}
@@ -35,6 +46,35 @@ public:
   virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
     return Type::STRING;
   }
+
+  virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
+      codeGen.emitIndent(indent);
+
+	  std::string temp = codeGen.newTempVar();
+	  codeGen.emitStringAssignment(temp, value);
+	  codeGen.lastValue = temp;
+  }
+
+  virtual bool isAddress() const override { return true; }
+};
+
+class BooleanExpr : public Expr {
+public:
+    bool value;
+    BooleanExpr(bool val) : value(val) {}
+
+    virtual void print(int indent = 0) const override {
+		printIndent(indent);
+		std::cout << "BooleanExpr(" << (value ? "true" : "false") << ")\n";
+	}
+
+    virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+		return Type::BOOL;
+	}
+
+	virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
+		codeGen.lastValue = value ? "1" : "0";
+	}
 };
 
 class VariableExpr : public Expr {
@@ -52,16 +92,21 @@ public:
     }
     return sym->type;
   }
+
+  virtual void Emit(QbeCodeGen& codeGen, int indent=0) override 
+  {
+      codeGen.lastValue = "%" + name;
+  }
 };
 
 class BinaryExpr : public Expr {
 public:
-  char op;
+  std::string op;
   std::unique_ptr<Expr> left;
   std::unique_ptr<Expr> right;
 
-  BinaryExpr(char oper, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs) :
-    op(oper), left(std::move(lhs)), right(std::move(rhs)) { }
+  BinaryExpr(std::string oper, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs) :
+      op(oper), left(std::move(lhs)), right(std::move(rhs)) {}
 
   virtual void print(int indent = 0) const override 
   { 
@@ -78,8 +123,36 @@ public:
     if(leftType != rightType) {
       throw std::runtime_error("Type mismatch in binary expression");
     }
+    
+    if (op == "<" || op == ">" || op == "==" || op == "!=" ||
+        op == "<=" || op == ">=") {
+        if (leftType != Type::NUM && leftType != Type::CHAR) {
+            throw std::runtime_error("Invalid types for comparison operator: " + op);
+		}
+        return Type::BOOL;
+    }
 
     return leftType; // Assuming both sides are of the same type
+  }
+
+  virtual void Emit(QbeCodeGen& codeGen, int indent=0) {
+    left->Emit(codeGen, indent);
+	std::string leftReg = codeGen.lastValue;
+	right->Emit(codeGen, indent);
+    std::string rightReg = codeGen.lastValue;
+    codeGen.emitIndent(indent);
+    std::string temp = codeGen.newTempVar();
+	
+    if (op == "<" || op == ">" || op == "==" || op == "!=" ||
+        op == "<=" || op == ">=")
+    {
+		codeGen.emitComparison(temp, leftReg, rightReg, op);
+    }
+    else {
+        codeGen.emitArithmetic(temp, leftReg, rightReg, op);
+    }
+
+	codeGen.lastValue = temp;
   }
 };
 
@@ -105,11 +178,11 @@ public:
             throw std::runtime_error("Undefined function: " + funcName);
         }
 
-        if (args.size() != sym->paramTypes.size()) {
+        if (args.size() != sym->paramTypes.size() && funcName != "printf") {
             throw std::runtime_error("Argument count mismatch in function call to " + funcName);
         }
 
-        for (size_t i = 0; i < args.size(); ++i) {
+        for (size_t i = 0; i < sym->paramTypes.size(); ++i) {
             Type argType = args[i]->analyzeAst(symTable);
             if (argType != sym->paramTypes[i]) {
                 throw std::runtime_error("Argument type mismatch in function call to " + funcName);
@@ -119,4 +192,17 @@ public:
 
         return sym->type;
     }
+
+    virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
+		std::vector<std::string> argRegs;
+		for (const auto& arg : args) {
+			arg->Emit(codeGen, indent);
+			argRegs.push_back(codeGen.lastValue);
+		}
+
+        std::string temp = codeGen.newTempVar();
+        codeGen.emitIndent(indent);
+		codeGen.emitFuncCall(funcName, argRegs, temp);
+        codeGen.lastValue = temp;
+	}
 };

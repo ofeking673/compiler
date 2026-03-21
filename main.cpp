@@ -1,6 +1,6 @@
-#include "lexer.h"
-#include "fileIO.h"
+#include "QbeCodeGen.h"
 #include "Parser.h"
+#include "fileIO.h"
 
 int main() {
   FileIO file;
@@ -19,15 +19,21 @@ int main() {
   Parser parser(tokens);
   
   auto program = parser.parseProgram();
-  
+
   try {
     program->analyzeAst(std::make_shared<SymbolTable>());
     std::cout << "Semantic analysis completed successfully." << std::endl;
-    program->print();
   }
   catch (const std::runtime_error& e) {
     std::cerr << "Semantic analysis failed: " << e.what() << std::endl;
+    return 1;
   }
+  program->print();
+
+  QbeCodeGen codeGen;
+  program->Emit(codeGen);
+
+  codeGen.produceFinalFile("test.ssa");
 
   return 0;
 }

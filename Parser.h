@@ -1,5 +1,6 @@
 #include "program.h"
 #include "lexer.h"
+#include "Array.h"
 
 class Parser {
 public:
@@ -32,6 +33,10 @@ public:
 
     // type
     string typeName = consume().value;
+    if (typeName == "[")
+    {
+      return parseArrayDeclStmt(name);
+    }
 
     if (consume().value != "=")
       throw std::runtime_error("Expected '=' in variable declaration");
@@ -40,19 +45,56 @@ public:
 
     return std::make_unique<VarDeclStmt>(name, typeName, std::move(value));
   }
-
  
   std::unique_ptr<Program> parseProgram() {
     auto program = std::make_unique<Program>();
 
     while (peek().type != TokenType::END) {
-      auto stmt = parseStatement();  
-      if(stmt) program->stmt.push_back(std::move(stmt));
+      try {
+        auto stmt = parseStatement();
+        if (stmt) program->stmt.push_back(std::move(stmt));
+      }
+      catch (...) {
+        std::cout << "Error parsing statement at token: " << peek().value << std::endl;
+        std::cout << "Line: " << peek().line << ", Column: " << peek().column << std::endl;
+        throw;
+      }
     }
 
     return program;
   }
   
+  std::unique_ptr<Stmt> parseArrayDeclStmt(std::string name) {
+	// We are at the point where we have consumed 'let name : ['
+
+	std::string elemType = consume().value;
+    consumeToken(TokenType::PUNCTUATION, ",");
+    std::string size = consume().value;
+
+    consumeToken(TokenType::PUNCTUATION, "]");
+	
+	if (consume().value != "=")
+	  throw std::runtime_error("Expected '=' in array declaration");
+
+	std::vector<std::shared_ptr<Expr>> initializer;
+
+	if (peek().type == TokenType::PUNCTUATION && peek().value == "{") {
+		consume(); // consume '{'
+		while (!(peek().type == TokenType::PUNCTUATION && peek().value == "}")) {
+			initializer.push_back(std::move(parseExpression()));
+			if (peek().type == TokenType::PUNCTUATION && peek().value == ",") {
+				consume(); // consume ','
+			}
+			else {
+				break;
+			}
+		}
+		consumeToken(TokenType::PUNCTUATION, "}");
+	}
+
+	return std::make_unique<ArrayDeclStmt>(name, stringToType(elemType), -1, std::move(initializer));
+  }
+
   std::unique_ptr<Stmt> parseStatement() {
     if (peek().type == TokenType::END) 
       return nullptr;
@@ -67,6 +109,16 @@ public:
       consume(); // consume 'return'
       auto expr = parseExpression();
       return std::make_unique<ReturnStmt>(std::move(expr));
+    }
+    else if (peek().type == TokenType::KEYWORD && peek().value == "for") {
+	  return parseForLoop();
+	}
+    else if (peek().type == TokenType::KEYWORD && peek().value == "while") {
+	  return parseWhileLoop();
+	}
+    else if (peek().type == TokenType::KEYWORD && peek().value == "if")
+    {
+      return parseIfStmt();
     }
     else if (peek().type == TokenType::IDENTIFIER) {
         // Could be an expression statement (e.g., function call) or assignment
@@ -140,22 +192,79 @@ public:
     auto node = parseFactor();
     while(peek().type == TokenType::OPERATOR &&
           (peek().value == "*" || peek().value == "/")) {
-      char op = consume().value[0];
+      std::string op = consume().value;
       auto right = parseFactor();
       node = std::make_unique<BinaryExpr>(op, std::move(node), std::move(right));
     }
     return node;
   }
+  
+  std::unique_ptr<Stmt> parseForLoop() {
+    consumeToken(TokenType::KEYWORD, "for");
+	std::string varName = consume().value;
+	consumeToken(TokenType::KEYWORD, "in");
+	auto op = parseExpression(); // This returns a binary Expr containing op = ..
+    auto* binOp = dynamic_cast<BinaryExpr*>(op.get());
     
+    auto s = std::move(binOp->left);
+    auto e = std::move(binOp->right);
+    
+
+	auto body = parseBlock();
+	return std::make_unique<ForLoopStmt>(varName, std::move(s), std::move(e),std::move(body));
+  }
+
+  std::unique_ptr<Stmt> parseIfStmt() {
+      consumeToken(TokenType::KEYWORD, "if");
+      auto condition = parseExpression();
+      auto thenBlock = parseBlock();
+
+      std::unique_ptr<codeBlock> elseBlock = nullptr;
+      if (peek().type == TokenType::KEYWORD && peek().value == "else") {
+          consumeToken(TokenType::KEYWORD, "else");
+          elseBlock = parseBlock();
+      }
+
+      return std::make_unique<IfStmt>(std::move(condition), std::move(thenBlock), std::move(elseBlock));
+  }
+
+  std::unique_ptr<Stmt> parseWhileLoop() {
+    consumeToken(TokenType::KEYWORD, "while");
+    auto condition = parseExpression();
+    auto body = parseBlock();
+    return std::make_unique<WhileLoopStmt>(std::move(condition), std::move(body));
+  }
+
   std::unique_ptr<Expr> parseExpression() {
-    auto node = parseTerm();
+    auto node = parseComparisonExpr();
     while(peek().type == TokenType::OPERATOR &&
           (peek().value == "+" || peek().value == "-")) {
-      char op = consume().value[0];
-      auto right = parseTerm();
+      std::string op = consume().value;
+      auto right = parseComparisonExpr();
       node = std::make_unique<BinaryExpr>(op, std::move(node), std::move(right));
     }
     return node;
+  }
+
+  std::unique_ptr<Expr> parseComparisonExpr() {
+      auto node = parseRangeExpr();
+      while (peek().type == TokenType::OPERATOR &&
+          (peek().value == "==" || peek().value == "!=" || peek().value == "<" || peek().value == ">" || peek().value == "<=" || peek().value == ">=")) {
+          std::string op = consume().value;
+          auto right = parseRangeExpr();
+          node = std::make_unique<BinaryExpr>(op, std::move(node), std::move(right));
+      }
+      return node;
+  }
+
+  std::unique_ptr<Expr> parseRangeExpr() {
+      auto node = parseTerm();
+      while (peek().type == TokenType::OPERATOR && peek().value == "..") {
+          std::string op = consume().value;
+          auto right = parseTerm();
+          node = std::make_unique<BinaryExpr>(op, std::move(node), std::move(right));
+      }
+      return node;
   }
 
   std::unique_ptr<Expr> parseFactor() {
@@ -166,34 +275,14 @@ public:
         return nullptr; // For extreme cases of unclosed parenthesis, etc.
       case TokenType::LITERAL:
         consume();
-        if(isNumber(tok.value))
-          return std::make_unique<NumberExpr>(std::stod(tok.value));
+        if (isNumber(tok.value))
+            return std::make_unique<NumberExpr>(std::stoi(tok.value));
+        else if (tok.value == "true" || tok.value == "false")
+            return std::make_unique<BooleanExpr>(tok.value == "true");
         else
           return std::make_unique<StringExpr>(tok.value);
-      case TokenType::IDENTIFIER:
-          name = tok.value;
-          consume();
-
-          if (peek().type == TokenType::PUNCTUATION && peek().value == "(")
-          {
-            consume(); // consume '('
-			std::vector<std::unique_ptr<Expr>> args;
-
-			if (!(peek().type == TokenType::PUNCTUATION && peek().value == ")")) {
-			  while (true) {
-				args.push_back(parseExpression());
-				if (peek().type == TokenType::PUNCTUATION && peek().value == ",") {
-				  consume(); // consume ','
-				} else {
-				  break;
-				}
-			  }
-			}
-			consumeToken(TokenType::PUNCTUATION, ")");
-
-			return std::make_unique<FuncCallExpr>(name, std::move(args));
-          }
-        return std::make_unique<VariableExpr>(tok.value);
+      case TokenType::IDENTIFIER: // Case for variables and function calls
+        return parseIdentCall(tok);
       case TokenType::PUNCTUATION:
         if(tok.value == "(")
         {
@@ -207,17 +296,51 @@ public:
     }
   }
 
+  std::unique_ptr<Expr> parseIdentCall(Token tok) {
+      std::string name = tok.value;
+      consume();
+
+      if (peek().type == TokenType::PUNCTUATION && peek().value == "(")
+      {
+          consume(); // consume '('
+          std::vector<std::unique_ptr<Expr>> args;
+
+          if (!(peek().type == TokenType::PUNCTUATION && peek().value == ")")) {
+              while (true) {
+                  args.push_back(parseExpression());
+                  if (peek().type == TokenType::PUNCTUATION && peek().value == ",") {
+                      consume(); // consume ','
+                  }
+                  else {
+                      break;
+                  }
+              }
+          }
+          consumeToken(TokenType::PUNCTUATION, ")");
+
+          return std::make_unique<FuncCallExpr>(name, std::move(args));
+      }
+
+      if (peek().type == TokenType::PUNCTUATION && peek().value == "[")
+      {
+          consumeToken(TokenType::PUNCTUATION, "[");
+          auto indexExpr = parseExpression();
+          consumeToken(TokenType::PUNCTUATION, "]");
+          return std::make_unique<ArrayAccessExpr>(std::make_unique<VariableExpr>(name), std::move(indexExpr));
+      }
+
+	  return std::make_unique<VariableExpr>(name);
+  }
 
 private:
   int pos = 0;
   std::vector<Token> toks;
 
-  bool isNumber(std::string& s) {
-    for (char c : s) {
-      if (!isdigit(c)) {
-        return false;
-      }
-    }
-    return true;
+  bool isNumber(string myString) {
+      std::istringstream iss(myString);
+      float f;
+      iss >> std::noskipws >> f; // noskipws considers leading whitespace invalid
+      // Check the entire string was consumed and if either failbit or badbit is set
+      return iss.eof() && !iss.fail();
   }
 };

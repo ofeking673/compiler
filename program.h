@@ -13,9 +13,32 @@ public:
     }
   }
   virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+     /*
+     
+struct Symbol {
+    std::string name;
+    Type type;
+    bool isInitialized;
+    bool isFunction;
+    std::vector<Type> paramTypes;
+*/
+     symTable->insert(
+         {
+             "printf", 
+             Type::NUM,
+             true,
+             true,
+             {Type::STRING}
+          });
     for(const auto& stm : stmt) {
       stm->analyzeAst(symTable);
     }
     return Type::VOID;
+  }
+
+  virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
+	for(const auto& stm : stmt) {
+	  stm->Emit(codeGen);
+	}
   }
 };
