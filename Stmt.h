@@ -482,3 +482,24 @@ public:
         codeGen.output << endifLabel << "\n";
 	}
 };
+
+class ImportStmt : public Stmt {
+public:
+    std::string moduleName;
+
+    ImportStmt(const std::string& name) : moduleName(name) {}
+
+    void print(int indent = 0) const override {
+        printIndent(indent);
+        std::cout << "ImportStmt: " << moduleName << "\n";
+    }
+
+    virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+        
+        return Type::VOID;
+    }
+
+    virtual void Emit(QbeCodeGen& codeGen, int indent = 0) override {
+
+    }
+};

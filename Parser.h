@@ -98,9 +98,13 @@ public:
   std::unique_ptr<Stmt> parseStatement() {
     if (peek().type == TokenType::END) 
       return nullptr;
-
+    if (peek().type == TokenType::IMPORT) {
+      consume(); // consume 'import'
+      std::string moduleName = consume().value;
+      return std::make_unique<ImportStmt>(moduleName);
+    }
     if (peek().type == TokenType::KEYWORD && peek().value == "let") {
-        return parseVarDecl();
+      return parseVarDecl();
     }
     else if (peek().type == TokenType::KEYWORD && peek().value == "fn") {
       return parseFunction();

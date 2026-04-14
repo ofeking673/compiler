@@ -15,7 +15,8 @@ enum class TokenType {
   LITERAL,
   OPERATOR,
   PUNCTUATION,
-  END
+  END,
+  IMPORT
 };
 
 std::string getTokenTypeName(TokenType type) {
@@ -32,6 +33,8 @@ std::string getTokenTypeName(TokenType type) {
       return "Operator";
     case TokenType::PUNCTUATION:
       return "Punctuation";
+    case TokenType::IMPORT:
+        return "Import";
     case TokenType::END:
       return "EOF";
     default:
@@ -59,11 +62,13 @@ public:
     if (c == '\0')
       return {TokenType::END, "", line, column};
 
+
       // Identifier / keyword / type
     if (isalpha(c) || c == '_') {
       string word;
       while (isalnum(peek()) || peek() == '_') word += get();
 
+      if (word == "import") return { TokenType::IMPORT, word, line, column };
       if (keywords.count(word)) return {TokenType::KEYWORD, word, line, column};
       if (type_identifiers.count(word)) return {TokenType::TYPE_IDENTIFIER, word, line, column};
       if (literals.count(word)) return {TokenType::LITERAL, word, line, column};
