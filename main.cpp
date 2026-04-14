@@ -2,9 +2,9 @@
 #include "Parser.h"
 #include "fileIO.h"
 
-int main() {
+int main(int argc, char* argv[]) {
   FileIO file;
-  string source = file.readFile("C:\\Users\\User\\compiler\\src.fg");
+  string source = file.readFile(argv[1]);
   
   Lexer lexer(source);
   std::vector<Token> tokens;

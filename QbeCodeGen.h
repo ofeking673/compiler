@@ -14,14 +14,14 @@ public:
 	int labelCount = 0;
 
 	std::unordered_map<std::string, std::string> varMap;
-
+	std::unordered_map<std::string, std::vector<std::pair<Type, std::string>>> functionMap;
 	std::unordered_map<std::string, std::string> stringLiteralNames;
 	int stringCount = 0;
 
 	std::string lastValue;
 
 	std::string newTempVar() {
-		return "%" + std::to_string(labelCount++);
+		return "%." + std::to_string(labelCount++);
 	}
 
 	std::string newLabel(std::string name)
@@ -49,9 +49,8 @@ public:
 			std::cerr << "Error opening file for writing: " << fileName << std::endl;
 			return;
 		}
-
 		for (const auto& pair : stringLiteralNames) {
-            outFile << "data $" << pair.second << " = { b \"" << pair.first << "\\0\" }\n";
+            outFile << "data $" << pair.second << " = { b \"" << pair.first << "\\n\", b 0 }\n";
 		}
 		outFile << output.str();
 		outFile.close();
@@ -77,6 +76,9 @@ public:
 		output << var << "=alloc8\n";
 	}
 
+	void emitLongAssignment(const std::string& var, const std::string& value) {
+		output << var << " =l copy " << value << "\n";
+	}
 
 	void emitNumAssignment(const std::string& var, int value)
 	{
@@ -95,9 +97,16 @@ public:
 
 	void emitStringAssignment(const std::string& var, const std::string& value) 
 	{
-		allocatePointer(stripVarName(var));
 		RegisterStringLiteral(const_cast<std::string&>(value));
-		storeLabelValue("$" + stringLiteralNames[value], ((var[0] == '%') ? var : "%" + var));
+		emitLongAssignment(((var[0] == '%') ? var : "%" + var), "$" + stringLiteralNames[value]);
+	}
+
+	void emitPrintf(const std::string& formatVar, const std::vector<std::string>& argVars) {
+		output << "call $printf(l " << formatVar << ", ...";
+		for (const auto& arg : argVars) {
+			output << ", w " << arg;
+		}
+		output << ")\n";
 	}
 
 	std::string stripVarName(const std::string& var) {
@@ -114,20 +123,24 @@ public:
 		}
 	}
 
-	void emitFunctionStart(const std::string& funcName) {
-		output << "export function w $" << funcName << "() {\n";
+	void emitFunctionStart(const std::string& funcName, Type returnType) {
+		output << "export function " << toQbeType(returnType) <<  " $" << funcName << "() {\n";
 		output << "@start\n";
+		functionMap[funcName].push_back(std::make_pair(returnType, ""));
 	}
 
-	void emitFunctionStart(const std::string& funcName, const std::vector<std::pair<Type, std::string>>& params) {
-		output << "export function w $" << funcName << "(";
+	void emitFunctionStart(const std::string& funcName, Type returnType, std::vector<std::pair<Type, std::string>> params) {
+		output << "export function " << toQbeType(returnType) << " $" << funcName << "(";
 		for (size_t i = 0; i < params.size(); ++i) {
-			output << params[i].second << " " << params[i].first;
+			output << toQbeType(params[i].first) << " %" << params[i].second;
 			if (i < params.size() - 1)
 				output << ", ";
 		}
 		output << ") {\n";
 		output << "@start\n";
+		
+		params.push_back(std::make_pair(returnType, ""));
+		functionMap[funcName] = params;
 	}
 
 	void emitFunctionEnd()
@@ -139,12 +152,35 @@ public:
 		output << "ret " << var << "\n";
 	}
 
-	void emitFuncCall(const std::string& funcName, const std::vector<std::string>& args, const std::string& resultVar) {
-		output << resultVar << " =w call $" << funcName << "(";
-		for (size_t i = 0; i < args.size(); ++i) {
-			output << args[i];
-			if (i < args.size() - 1)
+	void emitFuncCall(const std::string& funcName, std::vector<std::string> argRegs, const std::string& resultVar) {
+		auto func = functionMap[funcName];
+	
+		//Find the return type in ""
+		Type returnType;
+		for (const auto& param : func) {
+			if (param.second == "")
+			{
+				returnType = param.first;
+				break;
+			}
+		}
+
+		output << resultVar << " =" << toQbeType(returnType) << " call $" << funcName << "(";
+
+		bool first = true;
+		for (int i = 0; i < argRegs.size(); ++i) {
+			auto param = func[i];
+			std::cout << toQbeType(param.first) << " " << argRegs[i] << "\n";
+			//If the arg name is "" skip it since it's the return type
+			if (param.second == "")
+				continue;
+
+			if (!first)
 				output << ", ";
+			  first = false;
+
+			output << toQbeType(param.first) << " " << argRegs[i];
+			
 		}
 		output << ")\n";
 	}
@@ -191,5 +227,6 @@ public:
 		if (varType == Type::STRING) return 8;	
 		return 4; // default
 	}
+
 
 };

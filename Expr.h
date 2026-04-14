@@ -173,12 +173,14 @@ public:
     }
 
     virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+        if(funcName == "printf") return AnalyzePrint(symTable);
+
         Symbol* sym = symTable->lookup(funcName);
         if (!sym || !sym->isFunction) {
             throw std::runtime_error("Undefined function: " + funcName);
         }
 
-        if (args.size() != sym->paramTypes.size() && funcName != "printf") {
+        if (args.size() != sym->paramTypes.size()) {
             throw std::runtime_error("Argument count mismatch in function call to " + funcName);
         }
 
@@ -193,6 +195,23 @@ public:
         return sym->type;
     }
 
+    virtual Type AnalyzePrint(std::shared_ptr<SymbolTable> symTable) {
+      if (args.size() == 0) {
+          throw std::runtime_error("printf requires at least a format string argument");
+      }
+      Type formatType = args[0]->analyzeAst(symTable);
+      if (formatType != Type::STRING) {
+          throw std::runtime_error("First argument to printf must be a string literal");
+      }
+      for (size_t i = 1; i < args.size(); ++i) {
+          Type argType = args[i]->analyzeAst(symTable);
+          if (argType != Type::NUM && argType != Type::STRING && argType != Type::BOOL) {
+              throw std::runtime_error("Unsupported argument type in printf: " + std::to_string((int)argType));
+          }
+      }
+      return Type::NUM;
+    }  
+
     virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
 		std::vector<std::string> argRegs;
 		for (const auto& arg : args) {
@@ -200,9 +219,14 @@ public:
 			argRegs.push_back(codeGen.lastValue);
 		}
 
-        std::string temp = codeGen.newTempVar();
-        codeGen.emitIndent(indent);
-		codeGen.emitFuncCall(funcName, argRegs, temp);
-        codeGen.lastValue = temp;
+    std::string temp = codeGen.newTempVar();
+    codeGen.emitIndent(indent);
+    if (funcName == "printf") {
+      codeGen.emitPrintf(argRegs[0], std::vector<std::string>(argRegs.begin() + 1, argRegs.end()));
+    }
+    else { 
+		  codeGen.emitFuncCall(funcName, argRegs, temp);
+      codeGen.lastValue = temp;
+    }
 	}
 };

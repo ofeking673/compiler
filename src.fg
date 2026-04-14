@@ -1,6 +1,13 @@
-import "gl"
+fn add(a: num, b: num) -> num {
 
-let x: num = 5
-let y: str = "Hello, world!"
+  printf("%d + %d is: %d", a, b , a+b)
+  return 0
+}
 
-printf(y)
+fn main() -> num {
+  
+
+  add(5, 6)
+  return 0
+
+}

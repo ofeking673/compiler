@@ -1,10 +1,13 @@
-data $str0 = { b "Hello, world!
-
-printf(y)
-\0" }
-%x =w copy 5
-%0 =alloc8
-storel $str0, %0
-%y =alloc8
-%1 =l loadl %0
-storel %1, %y
+data $str0 = { b "%d + %d is: %d\n", b 0 }
+export function w $add(w %a, w %b) {
+@start
+        %.0 =l copy $str0
+    %.1 =w add %a, %b
+    call $printf(l %.0, ..., w %a, w %b, w %.1)
+    ret 0
+}
+export function w $main() {
+@start
+        %.3 =w call $add(w 5, w 6)
+    ret 0
+}

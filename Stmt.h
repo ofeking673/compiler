@@ -214,19 +214,14 @@ public:
     }
 
     virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
-		codeGen.output << "export function " << codeGen.toQbeType(stringToType(returnType)) << " $" << name << "(";
-		for (size_t i = 0; i < params.size(); ++i) {
-			const auto& param = params[i];
-            codeGen.output << codeGen.toQbeType(stringToType(param.type)) << " %" << param.name;
-			
-			if (i < params.size() - 1) {
-				codeGen.output << ", ";
-			}
-		}
-		codeGen.output << ") {\n@start\n";
-		body->Emit(codeGen);
-		codeGen.output << "}\n\n";
-	}
+		    std::vector<std::pair<Type, std::string>> qbeParams;
+        for (const auto& param : params) {
+            qbeParams.push_back({ stringToType(param.type), param.name });
+        }
+        codeGen.emitFunctionStart(name, stringToType(returnType), qbeParams);
+        body->Emit(codeGen, indent+1);
+        codeGen.emitFunctionEnd();
+	  }
 };
 
 class ExprStmt : public Stmt {

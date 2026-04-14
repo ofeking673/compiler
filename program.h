@@ -22,14 +22,7 @@ struct Symbol {
     bool isFunction;
     std::vector<Type> paramTypes;
 */
-     symTable->insert(
-         {
-             "printf", 
-             Type::NUM,
-             true,
-             true,
-             {Type::STRING}
-          });
+
     for(const auto& stm : stmt) {
       stm->analyzeAst(symTable);
     }
