@@ -58,7 +58,7 @@ public:
 			initializer[i]->Emit(codeGen, indent);
 			std::string indexVar = codeGen.newTempVar();
 			codeGen.emitIndent(indent);
-			codeGen.emitArithmetic(indexVar, arrayVar, std::to_string(i * sizeofType), "+");
+			codeGen.emitArithmetic(indexVar, arrayVar, std::to_string(i * sizeofType), "+", true);
 			codeGen.emitIndent(indent);
 			codeGen.output << "store"<< qbeType << " " << codeGen.lastValue << ", " << indexVar << "\n";
 		}
@@ -109,8 +109,6 @@ public:
 
 	virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
 		
-		for (int i = 0; i < codeGen.varMap.size(); ++i)
-			std::cout << "VarMap: " << codeGen.varMap.begin()->first << " -> " << codeGen.varMap.begin()->second << "\n";
 		// arrayExpr should be an array variable, indexExpr should be a num expression
 		std::string arrayVar = codeGen.varMap[arrayName]; // Get the corresponding QBE variable for the array
 		
@@ -124,10 +122,13 @@ public:
 		codeGen.emitIndent(indent);
 		std::string offsetVar = codeGen.newTempVar();
 		codeGen.emitArithmetic(offsetVar, indexVar, std::to_string(sizeofType), "*");
+		
+		codeGen.emitIndent(indent);
+		std::string extendedArrayVar = codeGen.newTempVar();
+		codeGen.output << extendedArrayVar << " =l extsw " << offsetVar << "\n";
 
 		codeGen.emitIndent(indent);
-		std::cout << arrayName << " is at " << arrayVar << " and index is " << indexVar << " with offset " << offsetVar << "\n";
-		codeGen.emitArithmetic(elementPtr, arrayVar, offsetVar, "+");
+		codeGen.emitArithmetic(elementPtr, arrayVar, extendedArrayVar, "+", true);
 
 		codeGen.lastValue = elementPtr;
 	}

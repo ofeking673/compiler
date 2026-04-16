@@ -185,8 +185,9 @@ public:
 		output << ")\n";
 	}
 
-	void emitArithmetic(const std::string& resultVar, const std::string& lhs, const std::string& rhs, const std::string& op)
+	void emitArithmetic(const std::string& resultVar, const std::string& lhs, const std::string& rhs, const std::string& op, bool isPointer = false)
 	{
+		std::cout << isPointer << "\n";
 		std::string qbeOp;
 		if (op == "+") qbeOp = "add";
 		else if (op == "-") qbeOp = "sub";
@@ -196,7 +197,11 @@ public:
 			std::cerr << "Unsupported operator: " << op << std::endl;
 			return;
 		}
-		output << resultVar << " =w " << qbeOp << " " << lhs << ", " << rhs << "\n";
+		if (isPointer) 
+			output << resultVar << " =l " << qbeOp << " " << lhs << ", " << rhs << "\n";
+		else
+		  output << resultVar << " =w " << qbeOp << " " << lhs << ", " << rhs << "\n";
+		
 	}
 
 	void emitComparison(const std::string& resultVar, const std::string& lhs, const std::string& rhs, const std::string& op)
