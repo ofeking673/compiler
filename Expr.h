@@ -203,8 +203,10 @@ public:
       if (formatType != Type::STRING) {
           throw std::runtime_error("First argument to printf must be a string literal");
       }
-      for (size_t i = 1; i < args.size(); ++i) {
+      std::cout << args.size();
+      for (size_t i = 0; i < args.size(); ++i) {
           Type argType = args[i]->analyzeAst(symTable);
+          std::cout << "Arg " << i << " type: " << (int)argType << "\n";
           if (argType != Type::NUM && argType != Type::STRING && argType != Type::BOOL) {
               throw std::runtime_error("Unsupported argument type in printf: " + std::to_string((int)argType));
           }

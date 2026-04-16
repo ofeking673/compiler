@@ -50,7 +50,7 @@ public:
 		codeGen.emitIndent(indent);
 		int sizeofType = codeGen.toQbeSize(type);
 		std::string qbeType = codeGen.toQbeType(type);
-		codeGen.output << arrayVar << " =alloc" << qbeType << " " << sizeofType * size << "\n";
+		codeGen.output << arrayVar << " =l alloc" << sizeofType << " " << sizeofType * size << "\n";
 		codeGen.varMap[name] = arrayVar;
 
 		// Emit code for initializer if present
@@ -70,7 +70,8 @@ public:
 	std::shared_ptr<Expr> arrayExpr;
 	std::shared_ptr<Expr> indexExpr;
 
-	Symbol arraySymbol;
+	std::string arrayName;
+	Type arrayType;
 
 	ArrayAccessExpr(std::shared_ptr<Expr> arrayExpr, std::shared_ptr<Expr> indexExpr)
 		: arrayExpr(arrayExpr), indexExpr(indexExpr) {}
@@ -83,18 +84,23 @@ public:
 	}
 
 	virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
-
+		printf("Help");
 		Type indexType = indexExpr->analyzeAst(symTable);
 		if (indexType != Type::NUM) {
 			throw std::runtime_error("Type error: Array index must be of type num.");
 		}
 
+		std::cout << dynamic_cast<VariableExpr*>(arrayExpr.get())->name;
 		Symbol* sym = symTable->lookup(dynamic_cast<VariableExpr*>(arrayExpr.get())->name);
-
+		if (!sym) {
+			throw std::runtime_error("Undefined variable: " + dynamic_cast<VariableExpr*>(arrayExpr.get())->name);
+		}
 		//Copy sym to arraySymbol
-		arraySymbol = *sym;
-
-		if (arraySymbol.isArray == false) {
+		arrayName = sym->name;
+		arrayType = sym->type;
+		
+		std::cout << "ArrayAccessExpr: Found symbol " << sym->name << " of type " << sym->type << "\n";
+		if (sym->isArray == false) {
 			throw std::runtime_error("Type error: Attempting to index a non-array variable.");
 		}
 
@@ -102,16 +108,17 @@ public:
 	}
 
 	virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {
-
+		
+		for (int i = 0; i < codeGen.varMap.size(); ++i)
+			std::cout << "VarMap: " << codeGen.varMap.begin()->first << " -> " << codeGen.varMap.begin()->second << "\n";
 		// arrayExpr should be an array variable, indexExpr should be a num expression
-		std::string arrayName = arraySymbol.name; // Get the array variable name
 		std::string arrayVar = codeGen.varMap[arrayName]; // Get the corresponding QBE variable for the array
-
+		
 		indexExpr->Emit(codeGen, indent);
 		std::string indexVar = codeGen.lastValue;
 
 		// Calculate size of each element, then do basePtr + size * idx
-		int sizeofType = codeGen.toQbeSize(arraySymbol.type);
+		int sizeofType = codeGen.toQbeSize(arrayType);
 		std::string elementPtr = codeGen.newTempVar();
 
 		codeGen.emitIndent(indent);
@@ -119,6 +126,7 @@ public:
 		codeGen.emitArithmetic(offsetVar, indexVar, std::to_string(sizeofType), "*");
 
 		codeGen.emitIndent(indent);
+		std::cout << arrayName << " is at " << arrayVar << " and index is " << indexVar << " with offset " << offsetVar << "\n";
 		codeGen.emitArithmetic(elementPtr, arrayVar, offsetVar, "+");
 
 		codeGen.lastValue = elementPtr;

@@ -204,10 +204,10 @@ public:
 		std::string qbeOp = "c";
 		if (op == "==") qbeOp += "eq";
 		else if (op == "!=") qbeOp += "ne";
-		else if (op == "<") qbeOp += "lt";
-		else if (op == "<=") qbeOp += "le";
-		else if (op == ">") qbeOp += "gt";
-		else if (op == ">=") qbeOp += "ge";
+		else if (op == "<") qbeOp += "slt";
+		else if (op == "<=") qbeOp += "sle";
+		else if (op == ">") qbeOp += "sgt";
+		else if (op == ">=") qbeOp += "sge";
 		else {
 			std::cerr << "Unsupported operator: " << op << std::endl;
 			return;

@@ -351,7 +351,9 @@ public:
         codeGen.output << loopLabel << "\n";
         // Check loop condition
         codeGen.emitIndent(indent+1);
-        codeGen.output << "jge %" << varName << ", " << endVar << ", " << endLabel << "\n";
+        std::string cond = codeGen.newTempVar();
+        codeGen.emitComparison(cond ,"%" + varName, endVar, "<=");
+        codeGen.output << "jnz " << cond << ", " << bodyLabel << ", " << endLabel << "\n";
         
         codeGen.emitIndent(indent);
         codeGen.output << bodyLabel << "\n";
