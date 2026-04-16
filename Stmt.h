@@ -324,7 +324,11 @@ public:
             throw std::runtime_error("For loop bounds must be numeric");
         }
 
+        Symbol iterSymbol = { varName, Type::NUM, true, false };
 
+        symTable->insert(iterSymbol);
+            
+        body->analyzeAst(symTable);
 
         return Type::VOID;
     }
