@@ -1,7 +1,7 @@
+#pragma once
 #include "program.h"
 #include "lexer.h"
-#include "Array.h"
-
+#include "Stmt.h"
 class Parser {
 public:
   Parser(std::vector<Token> tok) : toks(tok) {}
@@ -133,6 +133,15 @@ public:
             if (auto varExpr = dynamic_cast<VariableExpr*>(expr.get())) {
                 return std::make_unique<AssignStmt>(varExpr->name, std::move(value));
             }
+            else if (auto arrayAccessExpr = dynamic_cast<ArrayAccessExpr*>(expr.get())) {
+				// Handle array element assignment
+				auto varExpr = dynamic_cast<VariableExpr*>(arrayAccessExpr->arrayExpr.get());
+				if (!varExpr) {
+					throw std::runtime_error("Left-hand side of assignment must be a variable or array access");
+				}
+
+				return std::make_unique<ArrayAssignStmt>(varExpr->name, arrayAccessExpr->indexExpr, std::move(value));
+			}
             else {
                 throw std::runtime_error("Left-hand side of assignment must be a variable");
             }

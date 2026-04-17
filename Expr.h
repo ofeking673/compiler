@@ -95,7 +95,7 @@ public:
 
   virtual void Emit(QbeCodeGen& codeGen, int indent=0) override 
   {
-      codeGen.lastValue = "%" + name;
+      codeGen.lastValue = (name[0] == '%' ? "" : "%") + name;
   }
 };
 
@@ -231,4 +231,93 @@ public:
       codeGen.lastValue = temp;
     }
 	}
+};
+
+class ArrayAccessExpr : public Expr {
+public:
+    std::shared_ptr<VariableExpr> arrayExpr;
+    std::shared_ptr<Expr> indexExpr;
+
+    Type arrayType;
+
+    ArrayAccessExpr(std::shared_ptr<VariableExpr> arrayExpr, std::shared_ptr<Expr> indexExpr)
+        : arrayExpr(arrayExpr), indexExpr(indexExpr) {}
+
+    virtual void print(int indent = 0) const override {
+        printIndent(indent);
+        std::cout << "ArrayAccessExpr:\n";
+        arrayExpr->print(indent + 2);
+        indexExpr->print(indent + 2);
+    }
+
+    virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+        printf("Help");
+        Type indexType = indexExpr->analyzeAst(symTable);
+        if (indexType != Type::NUM) {
+            throw std::runtime_error("Type error: Array index must be of type num.");
+        }
+
+        Symbol* sym = symTable->lookup(arrayExpr->name);
+        if (!sym) {
+            throw std::runtime_error("Undefined variable: " + arrayExpr->name);
+        }
+
+        //Copy sym to arraySymbol
+        arrayType = sym->type;
+
+        std::cout << "ArrayAccessExpr: Found symbol " << sym->name << " of type " << sym->type << "\n";
+        if (sym->isArray == false) {
+            throw std::runtime_error("Type error: Attempting to index a non-array variable.");
+        }
+
+        return indexType;
+    }
+
+    virtual void Emit(QbeCodeGen& codeGen, int indent = 0) override {
+        getAddress(codeGen, indent);
+        std::string elementPtr = codeGen.lastValue;
+        std::string temp = codeGen.newTempVar();
+
+        switch (codeGen.toQbeType(arrayType)[0]) {
+        case 'b':
+            codeGen.loadByteValue(elementPtr, temp);
+			break;
+        case 'w':
+            codeGen.loadWordValue(elementPtr, temp);
+            break;
+        case 'l':
+            codeGen.loadLabelValue(elementPtr, temp);
+			break;
+        default: // How did you manage to do this..?
+        	throw std::runtime_error("Unsupported array element type in code generation.");
+        }
+
+        codeGen.lastValue = temp;
+    }
+
+    void getAddress(QbeCodeGen& codeGen, int indent = 0) {
+        // arrayExpr should be an array variable, indexExpr should be a num expression
+        std::string arrayVar = codeGen.varMap[arrayExpr->name]; // Get the corresponding QBE variable for the array
+
+        indexExpr->Emit(codeGen, indent);
+        std::string indexVar = codeGen.lastValue;
+
+        // Calculate size of each element, then do basePtr + size * idx
+        int sizeofType = codeGen.toQbeSize(arrayType);
+        std::string elementPtr = codeGen.newTempVar();
+
+        codeGen.emitIndent(indent);
+        std::string offsetVar = codeGen.newTempVar();
+        codeGen.emitArithmetic(offsetVar, indexVar, std::to_string(sizeofType), "*");
+
+        codeGen.emitIndent(indent);
+        std::string extendedArrayVar = codeGen.newTempVar();
+        codeGen.output << extendedArrayVar << " =l extsw " << offsetVar << "\n";
+
+        codeGen.emitIndent(indent);
+        codeGen.emitArithmetic(elementPtr, arrayVar, extendedArrayVar, "+", true);
+
+        codeGen.lastValue = elementPtr;
+	}
+    virtual bool isAddress() const override { return true; }
 };

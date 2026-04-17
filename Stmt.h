@@ -298,6 +298,73 @@ public:
     }
 };
 
+class ArrayAssignStmt : public Stmt {
+public:
+	std::string arrayName;
+	std::shared_ptr<Expr> index;
+	std::unique_ptr<Expr> value;
+
+	ArrayAssignStmt(const std::string& name, std::shared_ptr<Expr> idx, std::unique_ptr<Expr> val) :
+		arrayName(name), index(idx), value(std::move(val)) {}
+
+	void print(int indent = 0) const override {
+		printIndent(indent);
+		std::cout << "ArrayAssignStmt: " + arrayName + "[\n";
+		index->print(indent + 2);
+		printIndent(indent);
+		std::cout << "] <-\n";
+		value->print(indent + 2);
+	}
+
+	virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+		Symbol* sym = symTable->lookup(arrayName);
+		if (!sym) {
+			throw std::runtime_error("Undefined variable: " + arrayName);
+		}
+		Type indexType = index->analyzeAst(symTable);
+		if (indexType != Type::NUM) {
+			throw std::runtime_error("Array index must be of type num");
+		}
+		Type valueType = value->analyzeAst(symTable);
+		if (valueType != sym->type) {
+			throw std::runtime_error("Type mismatch in array assignment to " + arrayName);
+		}
+		return Type::VOID;
+	}
+
+    virtual void Emit(QbeCodeGen& codeGen, int indent = 0) override {
+        // Emit code to evaluate index and value
+        index->Emit(codeGen, indent);
+        auto indexVar = codeGen.lastValue;
+        value->Emit(codeGen, indent);
+        auto valueVar = codeGen.lastValue;
+
+        
+        ArrayAccessExpr arrayAccess = ArrayAccessExpr(std::make_shared<VariableExpr>(arrayName), std::make_shared<VariableExpr>(indexVar));
+        arrayAccess.getAddress(codeGen, indent);
+        auto elementAddr = codeGen.lastValue;
+        Type type = arrayAccess.arrayType;
+
+        std::string qbeType = codeGen.toQbeType(type);
+        codeGen.emitIndent(indent);
+        switch (qbeType[0]) {
+            case 'l':
+			    codeGen.storeLabelValue(valueVar, elementAddr);
+			    break;
+		    case 'w':
+                codeGen.storeWordValue(valueVar, elementAddr);
+                break;
+            case 'b':
+			    codeGen.storeByteValue(valueVar, elementAddr);
+			    break;
+            default: // How did we get here..?
+                throw std::runtime_error("Unsupported type in array assignment");
+        }
+
+        codeGen.lastValue = valueVar;
+    }
+};
+
 class ForLoopStmt : public Stmt {
 public:
     std::string varName;
@@ -502,5 +569,70 @@ public:
 
     virtual void Emit(QbeCodeGen& codeGen, int indent = 0) override {
 
+    }
+};
+
+class ArrayDeclStmt : public Stmt {
+public:
+    std::string name;
+    Type type;
+    int size;
+    std::vector<std::shared_ptr<Expr>> initializer;
+
+    ArrayDeclStmt(const std::string& name,
+        Type type,
+        int size = -1,
+        std::vector<std::shared_ptr<Expr>> init = {})
+        : name(name), type(type), size(size), initializer(init) {}
+
+    virtual void print(int indent = 0) const override {
+        printIndent(indent);
+        std::cout << "ArrayDeclStmt: " << type << " " << name << "[" << size << "]" << std::endl;
+    }
+
+    virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
+        if (!CheckAllVarTypes(symTable))
+        {
+            throw new std::runtime_error("Type error in array initializer");
+        }
+
+        if (size == -1) {
+            size = initializer.size();
+        }
+
+        Symbol arraySymbol = { name, type, true, false, {}, true };
+        symTable->insert(arraySymbol);
+        return Type::ARRAY;
+    }
+
+    bool CheckAllVarTypes(std::shared_ptr<SymbolTable> symTable) {
+        for (const auto& expr : initializer) {
+            Type exprType = expr->analyzeAst(symTable); // Pass symbol table if needed
+            if (exprType != type) {
+                std::cerr << "Type error: Array initializer type does not match declared type.\n";
+                return false;
+            }
+        }
+        return true;
+    }
+
+    virtual void Emit(QbeCodeGen& codeGen, int indent = 0) override {
+        // Allocate array based on size from codeGen.ToQbeType()
+        std::string arrayVar = codeGen.newTempVar();
+        codeGen.emitIndent(indent);
+        int sizeofType = codeGen.toQbeSize(type);
+        std::string qbeType = codeGen.toQbeType(type);
+        codeGen.output << arrayVar << " =l alloc" << sizeofType << " " << sizeofType * size << "\n";
+        codeGen.varMap[name] = arrayVar;
+
+        // Emit code for initializer if present
+        for (size_t i = 0; i < initializer.size(); i++) {
+            initializer[i]->Emit(codeGen, indent);
+            std::string indexVar = codeGen.newTempVar();
+            codeGen.emitIndent(indent);
+            codeGen.emitArithmetic(indexVar, arrayVar, std::to_string(i * sizeofType), "+", true);
+            codeGen.emitIndent(indent);
+            codeGen.output << "store" << qbeType << " " << codeGen.lastValue << ", " << indexVar << "\n";
+        }
     }
 };

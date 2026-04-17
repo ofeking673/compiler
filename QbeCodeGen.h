@@ -68,6 +68,18 @@ public:
 		output << "storel " << value << ", " << var << "\n";
 	}
 
+	void loadWordValue(const std::string& var, const std::string& dest) {
+		output << dest << " =w loadw " << var << "\n";
+	}
+
+	void loadByteValue(const std::string& var, const std::string& dest) {
+		output << dest << " =b loadb " << var << "\n";
+	}
+
+	void loadLabelValue(const std::string& var, const std::string& dest) {
+		output << dest << " =l loadl " << var << "\n";
+	}
+
 	void declareWordVar(const std::string& var) {
 		output << var << "=alloc4\n";
 	}
@@ -115,7 +127,8 @@ public:
 		return var;	
 	}
 
-	void allocatePointer(const std::string& var) {
+	void allocatePointer(const std::string& var) 
+	{
 		if (!varMap.count(var))
 		{
 			output << "%" << var << " =alloc8\n";

@@ -4,7 +4,7 @@
 
 int main(int argc, char* argv[]) {
   FileIO file;
-  string source = file.readFile(argv[1]);
+  string source = file.readFile("C:\\Users\\User\\compiler\\src.fg");
   
   Lexer lexer(source);
   std::vector<Token> tokens;

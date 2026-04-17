@@ -1,3 +1,4 @@
+#pragma once
 #include "Stmt.h"
 
 class ArrayDeclStmt : public Stmt {
