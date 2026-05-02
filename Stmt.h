@@ -307,51 +307,40 @@ public:
 
 class ArrayAssignStmt : public Stmt {
 public:
-	std::string arrayName;
-	std::unique_ptr<Expr> index;
+    std::unique_ptr<ArrayAccessExpr> access;
 	std::unique_ptr<Expr> value;
 
-	ArrayAssignStmt(const std::string& name, std::unique_ptr<Expr> idx, std::unique_ptr<Expr> val) :
-		arrayName(name), index(std::move(idx)), value(std::move(val)) {}
+	ArrayAssignStmt(std::unique_ptr<ArrayAccessExpr> a, std::unique_ptr<Expr> val) :
+		access(std::move(a)), value(std::move(val)) {}
 
 	void print(int indent = 0) const override {
 		printIndent(indent);
-		std::cout << "ArrayAssignStmt: " + arrayName + "[\n";
-		index->print(indent + 2);
-		printIndent(indent);
+		std::cout << "ArrayAssignStmt: [\n";
+		access->print(indent + 2);
 		std::cout << "] <-\n";
 		value->print(indent + 2);
 	}
 
 	virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
-		Symbol* sym = symTable->lookup(arrayName);
-		if (!sym) {
-			throw std::runtime_error("Undefined variable: " + arrayName);
-		}
-		Type indexType = index->analyzeAst(symTable);
-		if (indexType != Type::NUM) {
-			throw std::runtime_error("Array index must be of type num");
-		}
+		
+        Type arrayType = access->analyzeAst(symTable);
 		Type valueType = value->analyzeAst(symTable);
-		if (valueType != sym->type) {
-			throw std::runtime_error("Type mismatch in array assignment to " + arrayName);
+        if (valueType != arrayType) {
+            throw std::runtime_error("Type mismatch in array assignment");
 		}
 		return Type::VOID;
 	}
 
     virtual void Emit(QbeCodeGen& codeGen, int indent = 0) override {
         // Emit code to evaluate index and value
-        index->Emit(codeGen, indent);
-        auto indexVar = codeGen.lastValue;
+
+        access->getAddress(codeGen, indent);
+        auto elementAddr = codeGen.lastValue;
+        Type type = access->arrayType;
+
         value->Emit(codeGen, indent);
         auto valueVar = codeGen.lastValue;
-
         
-        ArrayAccessExpr arrayAccess = ArrayAccessExpr(std::make_unique<VariableExpr>(arrayName), std::make_unique<VariableExpr>(indexVar));
-        arrayAccess.getAddress(codeGen, indent);
-        auto elementAddr = codeGen.lastValue;
-        Type type = arrayAccess.arrayType;
-
         std::string qbeType = codeGen.toQbeType(type);
         codeGen.emitIndent(indent);
         switch (qbeType[0]) {

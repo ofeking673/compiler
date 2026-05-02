@@ -121,6 +121,8 @@ public:
     Type rightType = right->analyzeAst(symTable);
 
     if(leftType != rightType) {
+       std::cout << leftType << " " << rightType << "\n";
+       std::cout << op << "\n";
       throw std::runtime_error("Type mismatch in binary expression");
     }
     

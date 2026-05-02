@@ -185,12 +185,13 @@ public:
             }
             else if (auto arrayAccessExpr = dynamic_cast<ArrayAccessExpr*>(expr.get())) {
 				// Handle array element assignment
-				auto varExpr = dynamic_cast<VariableExpr*>(arrayAccessExpr->arrayExpr.get());
-				if (!varExpr) {
-					throw std::runtime_error("Left-hand side of assignment must be a variable or array access");
-				}
 
-				return std::make_unique<ArrayAssignStmt>(varExpr->name, std::move(arrayAccessExpr->indexExpr), std::move(value));
+                //Check is arrayExpr is a variable (e.g., arr[0] = 5) or another array access (e.g., arr[0][1] = 5)
+                // and get the variable expr
+
+
+                std::unique_ptr<ArrayAccessExpr> access(static_cast<ArrayAccessExpr*>(expr.release()));
+				return std::make_unique<ArrayAssignStmt>(std::move(access), std::move(value));
 			}
             else {
                 throw std::runtime_error("Left-hand side of assignment must be a variable");

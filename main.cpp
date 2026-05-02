@@ -33,9 +33,12 @@ int main(int argc, char* argv[]) {
   }
   catch (const std::runtime_error& e) {
     std::cerr << "Semantic analysis failed: " << e.what() << std::endl;
+
     return 1;
   }
+
   program->print();
+
 
   QbeCodeGen codeGen;
   program->Emit(codeGen);
