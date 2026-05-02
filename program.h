@@ -13,16 +13,6 @@ public:
     }
   }
   virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
-     /*
-     
-struct Symbol {
-    std::string name;
-    Type type;
-    bool isInitialized;
-    bool isFunction;
-    std::vector<Type> paramTypes;
-*/
-
     for(const auto& stm : stmt) {
       stm->analyzeAst(symTable);
     }
