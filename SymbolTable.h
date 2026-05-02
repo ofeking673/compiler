@@ -31,10 +31,18 @@ struct Symbol {
     bool isArray = false;
 };
 
+struct ArrayShape {
+    int dims = 1;
+    int rows = -1;
+    int cols = -1;
+};
+
 class SymbolTable {
 public:
   std::map<std::string, Symbol> symbolTable;
   std::shared_ptr<SymbolTable> parent;
+
+  std::unordered_map<std::string, ArrayShape> arrayShapes;
 
   SymbolTable(std::shared_ptr<SymbolTable> p = nullptr) : parent(p) {}
 

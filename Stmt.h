@@ -225,7 +225,8 @@ public:
             qbeParams.push_back({ stringToType(param.type), param.name });
         }
         codeGen.emitFunctionStart(name, stringToType(returnType), qbeParams);
-        body->Emit(codeGen, indent+1);
+        if(body)
+            body->Emit(codeGen, indent + 1);
         codeGen.emitFunctionEnd();
 	  }
 };
@@ -307,11 +308,11 @@ public:
 class ArrayAssignStmt : public Stmt {
 public:
 	std::string arrayName;
-	std::shared_ptr<Expr> index;
+	std::unique_ptr<Expr> index;
 	std::unique_ptr<Expr> value;
 
-	ArrayAssignStmt(const std::string& name, std::shared_ptr<Expr> idx, std::unique_ptr<Expr> val) :
-		arrayName(name), index(idx), value(std::move(val)) {}
+	ArrayAssignStmt(const std::string& name, std::unique_ptr<Expr> idx, std::unique_ptr<Expr> val) :
+		arrayName(name), index(std::move(idx)), value(std::move(val)) {}
 
 	void print(int indent = 0) const override {
 		printIndent(indent);
@@ -346,7 +347,7 @@ public:
         auto valueVar = codeGen.lastValue;
 
         
-        ArrayAccessExpr arrayAccess = ArrayAccessExpr(std::make_shared<VariableExpr>(arrayName), std::make_shared<VariableExpr>(indexVar));
+        ArrayAccessExpr arrayAccess = ArrayAccessExpr(std::make_unique<VariableExpr>(arrayName), std::make_unique<VariableExpr>(indexVar));
         arrayAccess.getAddress(codeGen, indent);
         auto elementAddr = codeGen.lastValue;
         Type type = arrayAccess.arrayType;
@@ -585,11 +586,15 @@ public:
     int size;
     std::vector<std::shared_ptr<Expr>> initializer;
 
+    int rows = -1;
+    int cols = -1;
+
     ArrayDeclStmt(const std::string& name,
         Type type,
         int size = -1,
-        std::vector<std::shared_ptr<Expr>> init = {})
-        : name(name), type(type), size(size), initializer(init) {}
+        std::vector<std::shared_ptr<Expr>> init = {},
+        int r = -1, int c = -1)
+        : name(name), type(type), size(size), initializer(init), rows(r), cols(c) {}
 
     virtual void print(int indent = 0) const override {
         printIndent(indent);
@@ -608,6 +613,13 @@ public:
 
         Symbol arraySymbol = { name, type, true, false, {}, true };
         symTable->insert(arraySymbol);
+
+        ArrayShape sh;
+        if (rows > 0) { sh.dims = 2; sh.rows = rows; sh.cols = cols; }
+        else { sh.dims = 1; sh.cols = size; }
+
+        symTable->arrayShapes[name] = sh;
+
         return Type::ARRAY;
     }
 

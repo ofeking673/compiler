@@ -65,34 +65,84 @@ public:
   }
   
   std::unique_ptr<Stmt> parseArrayDeclStmt(std::string name) {
-	// We are at the point where we have consumed 'let name : ['
+      // We are at the point where we have consumed 'let name : ['
+      if (peek().value == "[")
+      {
+          consumeToken(TokenType::PUNCTUATION, "["); // consume the second '[' for multi-dimensional array              
+          std::string elemType = consume().value;
 
-	std::string elemType = consume().value;
-    consumeToken(TokenType::PUNCTUATION, ",");
-    std::string size = consume().value;
+          consumeToken(TokenType::PUNCTUATION, ",");
+          int cols = std::stoi(consume().value);
 
-    consumeToken(TokenType::PUNCTUATION, "]");
-	
-	if (consume().value != "=")
-	  throw std::runtime_error("Expected '=' in array declaration");
+          consumeToken(TokenType::PUNCTUATION, "]"); // consume the closing ']' for multi-dimensional array
+          consumeToken(TokenType::PUNCTUATION, ",");
+          int rows = std::stoi(consume().value);
 
-	std::vector<std::shared_ptr<Expr>> initializer;
+          consumeToken(TokenType::PUNCTUATION, "]"); // consume the closing ']' for the entire array declaration
 
-	if (peek().type == TokenType::PUNCTUATION && peek().value == "{") {
-		consume(); // consume '{'
-		while (!(peek().type == TokenType::PUNCTUATION && peek().value == "}")) {
-			initializer.push_back(std::move(parseExpression()));
-			if (peek().type == TokenType::PUNCTUATION && peek().value == ",") {
-				consume(); // consume ','
-			}
-			else {
-				break;
-			}
-		}
-		consumeToken(TokenType::PUNCTUATION, "}");
-	}
+          if (consume().value != "=")
+              throw std::runtime_error("Expected '=' in array declaration");
 
-	return std::make_unique<ArrayDeclStmt>(name, stringToType(elemType), -1, std::move(initializer));
+          std::vector<std::shared_ptr<Expr>> initializer;
+          // {{1,2,3}
+          if (peek().type == TokenType::PUNCTUATION && peek().value == "{") {
+              consumeToken(TokenType::PUNCTUATION, "{"); // consume '{'
+              while (!(peek().type == TokenType::PUNCTUATION && peek().value == "}")) {
+                  // each row must be "{ ... }"
+                  if (!(peek().type == TokenType::PUNCTUATION && peek().value == "{")) {
+                      throw std::runtime_error("Expected '{' at the start of each row initializer");
+                  }
+                  consumeToken(TokenType::PUNCTUATION, "{"); // consume '{' for the row initializer
+
+                  for (int c = 0; c < cols; c++) {
+                      initializer.push_back(std::move(parseExpression()));
+                      if (c < cols - 1) {
+                          consumeToken(TokenType::PUNCTUATION, ","); // consume ',' between elements
+                      }
+                  }
+                  consumeToken(TokenType::PUNCTUATION, "}"); // consume '}' for the row initializer
+                  // consume ',' between rows if there are more rows
+                  if (peek().type == TokenType::PUNCTUATION && peek().value == ",") {
+					  consumeToken(TokenType::PUNCTUATION, ",");
+				  }
+              }
+
+              consumeToken(TokenType::PUNCTUATION, "}"); // consume the closing '}' for the entire initializer
+
+              int totalSize = rows * cols;
+
+              return std::make_unique<ArrayDeclStmt>(name, stringToType(elemType), totalSize, std::move(initializer), rows, cols);
+          }
+          else
+          {
+              std::string elemType = consume().value;
+              consumeToken(TokenType::PUNCTUATION, ",");
+              std::string size = consume().value;
+
+              consumeToken(TokenType::PUNCTUATION, "]");
+
+              if (consume().value != "=")
+                  throw std::runtime_error("Expected '=' in array declaration");
+
+              std::vector<std::shared_ptr<Expr>> initializer;
+
+              if (peek().type == TokenType::PUNCTUATION && peek().value == "{") {
+                  consume(); // consume '{'
+                  while (!(peek().type == TokenType::PUNCTUATION && peek().value == "}")) {
+                      initializer.push_back(std::move(parseExpression()));
+                      if (peek().type == TokenType::PUNCTUATION && peek().value == ",") {
+                          consume(); // consume ','
+                      }
+                      else {
+                          break;
+                      }
+                  }
+                  consumeToken(TokenType::PUNCTUATION, "}");
+              }
+
+              return std::make_unique<ArrayDeclStmt>(name, stringToType(elemType), -1, std::move(initializer));
+          }
+      }
   }
 
   std::unique_ptr<Stmt> parseStatement() {
@@ -140,7 +190,7 @@ public:
 					throw std::runtime_error("Left-hand side of assignment must be a variable or array access");
 				}
 
-				return std::make_unique<ArrayAssignStmt>(varExpr->name, arrayAccessExpr->indexExpr, std::move(value));
+				return std::make_unique<ArrayAssignStmt>(varExpr->name, std::move(arrayAccessExpr->indexExpr), std::move(value));
 			}
             else {
                 throw std::runtime_error("Left-hand side of assignment must be a variable");
@@ -337,15 +387,19 @@ public:
           return std::make_unique<FuncCallExpr>(name, std::move(args));
       }
 
-      if (peek().type == TokenType::PUNCTUATION && peek().value == "[")
-      {
-          consumeToken(TokenType::PUNCTUATION, "[");
-          auto indexExpr = parseExpression();
-          consumeToken(TokenType::PUNCTUATION, "]");
-          return std::make_unique<ArrayAccessExpr>(std::make_unique<VariableExpr>(name), std::move(indexExpr));
-      }
 
-	  return std::make_unique<VariableExpr>(name);
+      std::unique_ptr<Expr> expr = std::make_unique<VariableExpr>(name);
+
+        // CHAIN any number of [index]
+        while (peek().type == TokenType::PUNCTUATION && peek().value == "[") {
+            consumeToken(TokenType::PUNCTUATION, "[");
+            auto indexExpr = parseExpression();
+            consumeToken(TokenType::PUNCTUATION, "]");
+            expr = std::make_unique<ArrayAccessExpr>(std::move(expr), std::move(indexExpr));
+        }
+
+
+        return expr;
   }
 
 private:
