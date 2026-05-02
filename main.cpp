@@ -5,11 +5,31 @@
 
 int main(int argc, char* argv[]) {
 
-  
+    if (argc < 2) {
+        std::cerr << "Usage:\n"
+            << "  compile file.fg    - Compile the source file\n"
+            << "  compile --lib file.fg    - Compile the source file into a lib\n";
+        return 1;
+    }
+
+    bool buildLib = false;
+    std::string filePath;
+
+    if (std::string(argv[1]) == "--lib") {
+        if (argc < 3) {
+            std::cerr << "Error: Missing file path for library compilation.\n";
+            return 1;
+        }
+        buildLib = true;
+        filePath = argv[2];
+    }
+    else {
+        filePath = argv[1];
+    }
   FileIO file;
-  string source = file.readFile("C:\\Users\\User\\compiler\\src.fg");
+  string source = file.readFile(filePath);
   if (source.empty()) {
-	std::cerr << "Error: Could not read file " << std::endl;
+	std::cerr << "Error: Could not read file " << filePath << std::endl;
 	return 1;
   }
   
@@ -33,16 +53,13 @@ int main(int argc, char* argv[]) {
   }
   catch (const std::runtime_error& e) {
     std::cerr << "Semantic analysis failed: " << e.what() << std::endl;
-
     return 1;
   }
-
   program->print();
-
 
   QbeCodeGen codeGen;
   program->Emit(codeGen);
 
-  codeGen.produceFinalFile("test.ssa");
+  compiler::processFile(filePath, buildLib, codeGen);
   return 0;
 }
