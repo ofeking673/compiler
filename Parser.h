@@ -183,6 +183,9 @@ public:
     consumeToken(TokenType::OPERATOR, "->");
     std::string returnType = consume().value;
     
+    if(peek().value != "{")
+        return std::make_unique<FuncDeclStmt>(funcName, params, returnType, nullptr);
+        
     auto body = parseBlock();
     return std::make_unique<FuncDeclStmt>(funcName, params, returnType, std::move(body));
   }

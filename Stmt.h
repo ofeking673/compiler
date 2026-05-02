@@ -171,8 +171,7 @@ public:
     }
 
     virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
-
-        // Create a new symbol table for the function scope
+        
         auto funcSymTable = symTable->createChild();
 
         std::vector<Type> paramTypes;
@@ -187,9 +186,11 @@ public:
             }
         }
 
-        // Analyze function body
-        for (const auto& stmt : body->stmts) {
-            stmt->analyzeAst(funcSymTable);
+        // Create a new symbol table for the function scope
+        if (!body)
+        {
+            symTable->insert({ name, stringToType(returnType), false, true, paramTypes });
+            return stringToType(returnType);
         }
 
         // Determine expected return type
@@ -208,6 +209,11 @@ public:
         // Insert function symbol into the parent symbol table
         if (!symTable->insert({ name, expectedType, true, true, paramTypes })) {
             throw std::runtime_error("Function already declared: " + name);
+        }
+
+        // Analyze function body
+        for (const auto& stmt : body->stmts) {
+            stmt->analyzeAst(funcSymTable);
         }
 
         return expectedType;
