@@ -1,0 +1,363 @@
+data $str3 = { b "\n", b 0 }
+data $str2 = { b ".", b 0 }
+data $str1 = { b "O", b 0 }
+data $str0 = { b "\n\n\n\n\n", b 0 }
+export function w $main() {
+@start
+        %w =w copy 30
+        %h =w copy 20
+    %.0 =l alloc4 2400
+    %.1 =l alloc4 2400
+    %.2 =w mul 1, 30
+    %.3 =w add %.2, 2
+    %.4 =w mul %.3, 4
+    %.5 =l extsw %.4
+    %.6 =l add %.0, %.5
+    storew 1, %.6
+    %.7 =w mul 2, 30
+    %.8 =w add %.7, 3
+    %.9 =w mul %.8, 4
+    %.10 =l extsw %.9
+    %.11 =l add %.0, %.10
+    storew 1, %.11
+    %.12 =w mul 3, 30
+    %.13 =w add %.12, 1
+    %.14 =w mul %.13, 4
+    %.15 =l extsw %.14
+    %.16 =l add %.0, %.15
+    storew 1, %.16
+    %.17 =w mul 3, 30
+    %.18 =w add %.17, 2
+    %.19 =w mul %.18, 4
+    %.20 =l extsw %.19
+    %.21 =l add %.0, %.20
+    storew 1, %.21
+    %.22 =w mul 3, 30
+    %.23 =w add %.22, 3
+    %.24 =w mul %.23, 4
+    %.25 =l extsw %.24
+    %.26 =l add %.0, %.25
+    storew 1, %.26
+        %t =w copy 0
+    @while_loop0
+      %.27 =w csltw %t, 20
+      jnz %.27, @while_body2, @while_end1
+    @while_body2
+            %.28 =l copy $str0
+      call $printf(l %.28, ...)
+%.30 =w sub %h, 1
+      %y =w copy 0
+      jmp @for_loop3
+      @for_loop3
+        %.31 =w csltw %y, %.30
+jnz %.31, @for_body4, @for_end5
+      @for_body4
+%.32 =w sub %w, 1
+        %x =w copy 0
+        jmp @for_loop6
+        @for_loop6
+          %.33 =w csltw %x, %.32
+jnz %.33, @for_body7, @for_end8
+        @for_body7
+          %.34 =w mul %y, 30
+          %.35 =w add %.34, %x
+          %.36 =w mul %.35, 4
+          %.37 =l extsw %.36
+          %.38 =l add %.0, %.37
+%.39 =w loadw %.38
+          %.40 =w ceqw %.39, 1
+          jnz %.40, @then9, @else10
+          @then9
+                        %.41 =l copy $str1
+            call $printf(l %.41, ...)
+            jmp @endif11
+          @else10
+                        %.43 =l copy $str2
+            call $printf(l %.43, ...)
+            jmp @endif11
+          @endif11
+          %x =w add %x, 1
+          jmp @for_loop6
+        @for_end8
+                %.45 =l copy $str3
+        call $printf(l %.45, ...)
+        %y =w add %y, 1
+        jmp @for_loop3
+      @for_end5
+%.47 =w sub %h, 1
+      %y =w copy 0
+      jmp @for_loop12
+      @for_loop12
+        %.48 =w csltw %y, %.47
+jnz %.48, @for_body13, @for_end14
+      @for_body13
+%.49 =w sub %w, 1
+        %x =w copy 0
+        jmp @for_loop15
+        @for_loop15
+          %.50 =w csltw %x, %.49
+jnz %.50, @for_body16, @for_end17
+        @for_body16
+                    %n =w copy 0
+          %.51 =w sub %x, 1
+          %.52 =w csgew %.51, 0
+          jnz %.52, @then18, @else19
+          @then18
+            %.53 =w sub %y, 1
+            %.54 =w csgew %.53, 0
+            jnz %.54, @then21, @else22
+            @then21
+              %.55 =w sub %y, 1
+              %.56 =w sub %x, 1
+              %.57 =w mul %.55, 30
+              %.58 =w add %.57, %.56
+              %.59 =w mul %.58, 4
+              %.60 =l extsw %.59
+              %.61 =l add %.0, %.60
+%.62 =w loadw %.61
+              %.63 =w add %n, %.62
+              %n =w copy %.63
+              jmp @endif23
+            @else22
+              jmp @endif23
+            @endif23
+            jmp @endif20
+          @else19
+            jmp @endif20
+          @endif20
+          %.64 =w sub %y, 1
+          %.65 =w csgew %.64, 0
+          jnz %.65, @then24, @else25
+          @then24
+            %.66 =w sub %y, 1
+            %.67 =w mul %.66, 30
+            %.68 =w add %.67, %x
+            %.69 =w mul %.68, 4
+            %.70 =l extsw %.69
+            %.71 =l add %.0, %.70
+%.72 =w loadw %.71
+            %.73 =w add %n, %.72
+            %n =w copy %.73
+            jmp @endif26
+          @else25
+            jmp @endif26
+          @endif26
+          %.74 =w add %x, 1
+          %.75 =w csltw %.74, %w
+          jnz %.75, @then27, @else28
+          @then27
+            %.76 =w sub %y, 1
+            %.77 =w csgew %.76, 0
+            jnz %.77, @then30, @else31
+            @then30
+              %.78 =w sub %y, 1
+              %.79 =w add %x, 1
+              %.80 =w mul %.78, 30
+              %.81 =w add %.80, %.79
+              %.82 =w mul %.81, 4
+              %.83 =l extsw %.82
+              %.84 =l add %.0, %.83
+%.85 =w loadw %.84
+              %.86 =w add %n, %.85
+              %n =w copy %.86
+              jmp @endif32
+            @else31
+              jmp @endif32
+            @endif32
+            jmp @endif29
+          @else28
+            jmp @endif29
+          @endif29
+          %.87 =w sub %x, 1
+          %.88 =w csgew %.87, 0
+          jnz %.88, @then33, @else34
+          @then33
+            %.89 =w sub %x, 1
+            %.90 =w mul %y, 30
+            %.91 =w add %.90, %.89
+            %.92 =w mul %.91, 4
+            %.93 =l extsw %.92
+            %.94 =l add %.0, %.93
+%.95 =w loadw %.94
+            %.96 =w add %n, %.95
+            %n =w copy %.96
+            jmp @endif35
+          @else34
+            jmp @endif35
+          @endif35
+          %.97 =w add %x, 1
+          %.98 =w csltw %.97, %w
+          jnz %.98, @then36, @else37
+          @then36
+            %.99 =w add %x, 1
+            %.100 =w mul %y, 30
+            %.101 =w add %.100, %.99
+            %.102 =w mul %.101, 4
+            %.103 =l extsw %.102
+            %.104 =l add %.0, %.103
+%.105 =w loadw %.104
+            %.106 =w add %n, %.105
+            %n =w copy %.106
+            jmp @endif38
+          @else37
+            jmp @endif38
+          @endif38
+          %.107 =w sub %x, 1
+          %.108 =w csgew %.107, 0
+          jnz %.108, @then39, @else40
+          @then39
+            %.109 =w add %y, 1
+            %.110 =w csltw %.109, %h
+            jnz %.110, @then42, @else43
+            @then42
+              %.111 =w add %y, 1
+              %.112 =w sub %x, 1
+              %.113 =w mul %.111, 30
+              %.114 =w add %.113, %.112
+              %.115 =w mul %.114, 4
+              %.116 =l extsw %.115
+              %.117 =l add %.0, %.116
+%.118 =w loadw %.117
+              %.119 =w add %n, %.118
+              %n =w copy %.119
+              jmp @endif44
+            @else43
+              jmp @endif44
+            @endif44
+            jmp @endif41
+          @else40
+            jmp @endif41
+          @endif41
+          %.120 =w add %y, 1
+          %.121 =w csltw %.120, %h
+          jnz %.121, @then45, @else46
+          @then45
+            %.122 =w add %y, 1
+            %.123 =w mul %.122, 30
+            %.124 =w add %.123, %x
+            %.125 =w mul %.124, 4
+            %.126 =l extsw %.125
+            %.127 =l add %.0, %.126
+%.128 =w loadw %.127
+            %.129 =w add %n, %.128
+            %n =w copy %.129
+            jmp @endif47
+          @else46
+            jmp @endif47
+          @endif47
+          %.130 =w add %x, 1
+          %.131 =w csltw %.130, %w
+          jnz %.131, @then48, @else49
+          @then48
+            %.132 =w add %y, 1
+            %.133 =w csltw %.132, %h
+            jnz %.133, @then51, @else52
+            @then51
+              %.134 =w add %y, 1
+              %.135 =w add %x, 1
+              %.136 =w mul %.134, 30
+              %.137 =w add %.136, %.135
+              %.138 =w mul %.137, 4
+              %.139 =l extsw %.138
+              %.140 =l add %.0, %.139
+%.141 =w loadw %.140
+              %.142 =w add %n, %.141
+              %n =w copy %.142
+              jmp @endif53
+            @else52
+              jmp @endif53
+            @endif53
+            jmp @endif50
+          @else49
+            jmp @endif50
+          @endif50
+                    %out =w copy 0
+          %.143 =w mul %y, 30
+          %.144 =w add %.143, %x
+          %.145 =w mul %.144, 4
+          %.146 =l extsw %.145
+          %.147 =l add %.0, %.146
+%.148 =w loadw %.147
+          %.149 =w ceqw %.148, 1
+          jnz %.149, @then54, @else55
+          @then54
+            %.150 =w ceqw %n, 2
+            jnz %.150, @then57, @else58
+            @then57
+              %out =w copy 1
+              jmp @endif59
+            @else58
+              %.151 =w ceqw %n, 3
+              jnz %.151, @then60, @else61
+              @then60
+                %out =w copy 1
+                jmp @endif62
+              @else61
+                %out =w copy 0
+                jmp @endif62
+              @endif62
+              jmp @endif59
+            @endif59
+            jmp @endif56
+          @else55
+            %.152 =w ceqw %n, 3
+            jnz %.152, @then63, @else64
+            @then63
+              %out =w copy 1
+              jmp @endif65
+            @else64
+              %out =w copy 0
+              jmp @endif65
+            @endif65
+            jmp @endif56
+          @endif56
+          %.153 =w mul %y, 30
+          %.154 =w add %.153, %x
+          %.155 =w mul %.154, 4
+          %.156 =l extsw %.155
+          %.157 =l add %.1, %.156
+          storew %out, %.157
+          %x =w add %x, 1
+          jmp @for_loop15
+        @for_end17
+        %y =w add %y, 1
+        jmp @for_loop12
+      @for_end14
+%.158 =w sub %h, 1
+      %y =w copy 0
+      jmp @for_loop66
+      @for_loop66
+        %.159 =w csltw %y, %.158
+jnz %.159, @for_body67, @for_end68
+      @for_body67
+%.160 =w sub %w, 1
+        %x =w copy 0
+        jmp @for_loop69
+        @for_loop69
+          %.161 =w csltw %x, %.160
+jnz %.161, @for_body70, @for_end71
+        @for_body70
+          %.162 =w mul %y, 30
+          %.163 =w add %.162, %x
+          %.164 =w mul %.163, 4
+          %.165 =l extsw %.164
+          %.166 =l add %.0, %.165
+          %.167 =w mul %y, 30
+          %.168 =w add %.167, %x
+          %.169 =w mul %.168, 4
+          %.170 =l extsw %.169
+          %.171 =l add %.1, %.170
+%.172 =w loadw %.171
+          storew %.172, %.166
+          %x =w add %x, 1
+          jmp @for_loop69
+        @for_end71
+        %y =w add %y, 1
+        jmp @for_loop66
+      @for_end68
+      %.173 =w add %t, 1
+      %t =w copy %.173
+      jmp @while_loop0
+    @while_end1
+    ret 0
+}
