@@ -463,7 +463,7 @@ public:
         // Generate labels for loop start and end
         std::string loopLabel = codeGen.newLabel("while_loop");
         std::string endLabel = codeGen.newLabel("while_end");
-
+        std::string bodyLabel = codeGen.newLabel("while_body");
         // Emit loop start label
         codeGen.emitIndent(indent);
         codeGen.output << loopLabel << "\n";
@@ -473,8 +473,10 @@ public:
 
         // Emit jump to end if condition is false
         codeGen.emitIndent(indent+1);
-        codeGen.output << "jz " << condVar << ", " << endLabel << "\n";
+        codeGen.output << "jnz " << condVar << ", " << bodyLabel << ", " << endLabel << "\n";
 
+        codeGen.emitIndent(indent);
+        codeGen.output << bodyLabel << "\n";
         // Emit loop body
         body->Emit(codeGen, indent);
         // Emit jump back to loop start

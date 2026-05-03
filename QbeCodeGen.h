@@ -50,7 +50,7 @@ public:
 			return;
 		}
 		for (const auto& pair : stringLiteralNames) {
-            outFile << "data $" << pair.second << " = { b \"" << pair.first << "\\n\", b 0 }\n";
+            outFile << "data $" << pair.second << " = { b \"" << pair.first << "\", b 0 }\n";
 		}
 		outFile << output.str();
 		outFile.close();

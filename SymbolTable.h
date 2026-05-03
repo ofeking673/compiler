@@ -53,7 +53,17 @@ public:
     symbolTable[sym.name] = sym;
     return true;
   }
-
+  
+  ArrayShape* lookupArrayShapes(const std::string& name) {
+        auto it = arrayShapes.find(name);
+        if (it != arrayShapes.end()) {
+            return &it->second;
+        }
+        if (parent) {
+            return parent->lookupArrayShapes(name);
+        }
+        return nullptr;
+    }
   Symbol* lookup(const std::string& name) {
       auto it = symbolTable.find(name);
       if (it != symbolTable.end())

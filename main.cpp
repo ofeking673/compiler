@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
   QbeCodeGen codeGen;
   program->Emit(codeGen);
 
-  compiler::processFile(filePath, buildLib, codeGen);
+  auto imports = compiler::findImports(program.get());
+  compiler::processFile(filePath, buildLib, codeGen, imports);
   return 0;
 }
