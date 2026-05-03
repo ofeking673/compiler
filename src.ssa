@@ -7,7 +7,9 @@ export function w $main() {
         %w =w copy 30
         %h =w copy 20
     %.0 =l alloc4 2400
+    call $memset(l %.0, w 0, l 2400)
     %.1 =l alloc4 2400
+    call $memset(l %.1, w 0, l 2400)
     %.2 =w mul 1, 30
     %.3 =w add %.2, 2
     %.4 =w mul %.3, 4

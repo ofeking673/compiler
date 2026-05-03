@@ -634,6 +634,12 @@ public:
         codeGen.output << arrayVar << " =l alloc" << sizeofType << " " << sizeofType * size << "\n";
         codeGen.varMap[name] = arrayVar;
 
+        // Zero-initialize the whole array when no explicit initializer is given
+        if (initializer.empty()) {
+            codeGen.emitIndent(indent);
+            codeGen.output << "call $memset(l " << arrayVar << ", w 0, l " << (sizeofType * size) << ")\n";
+        }
+
         // Emit code for initializer if present
         for (size_t i = 0; i < initializer.size(); i++) {
             initializer[i]->Emit(codeGen, indent);
