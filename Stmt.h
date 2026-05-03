@@ -224,9 +224,15 @@ public:
         for (const auto& param : params) {
             qbeParams.push_back({ stringToType(param.type), param.name });
         }
+        if (!body) {
+            // Forward declaration: register signature so call-sites can resolve it,
+            // but do not emit any IR (there is no function body to generate).
+            qbeParams.push_back({ stringToType(returnType), "" });
+            codeGen.functionMap[name] = qbeParams;
+            return;
+        }
         codeGen.emitFunctionStart(name, stringToType(returnType), qbeParams);
-        if(body)
-            body->Emit(codeGen, indent + 1);
+        body->Emit(codeGen, indent + 1);
         codeGen.emitFunctionEnd();
 	  }
 };
