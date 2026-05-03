@@ -227,10 +227,13 @@ public:
         if (!body) {
             // Forward declaration: register signature so call-sites can resolve it,
             // but do not emit any IR (there is no function body to generate).
+            // Convention (matching emitFunctionStart): a pair with an empty name
+            // appended at the end represents the return type in functionMap.
             qbeParams.push_back({ stringToType(returnType), "" });
             codeGen.functionMap[name] = qbeParams;
             return;
         }
+        // body is guaranteed non-null here due to the early return above.
         codeGen.emitFunctionStart(name, stringToType(returnType), qbeParams);
         body->Emit(codeGen, indent + 1);
         codeGen.emitFunctionEnd();
