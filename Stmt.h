@@ -419,7 +419,7 @@ public:
         // Check loop condition
         codeGen.emitIndent(indent+1);
         std::string cond = codeGen.newTempVar();
-        codeGen.emitComparison(cond ,"%" + varName, endVar, "<=");
+        codeGen.emitComparison(cond ,"%" + varName, endVar, "<");
         codeGen.output << "jnz " << cond << ", " << bodyLabel << ", " << endLabel << "\n";
         
         codeGen.emitIndent(indent);

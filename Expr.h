@@ -255,7 +255,8 @@ public:
 
     virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
         VariableExpr* baseVar = unwrapBaseVariable(arrayExpr.get());
-        shape = symTable->arrayShapes[baseVar->name];
+        ArrayShape* sh = symTable->lookupArrayShape(baseVar->name);
+        shape = sh ? *sh : ArrayShape{};
 
         Type indexType = indexExpr->analyzeAst(symTable);
         if (indexType != Type::NUM) {

@@ -63,6 +63,15 @@ public:
       return nullptr;
   }
 
+  ArrayShape* lookupArrayShape(const std::string& name) {
+      auto it = arrayShapes.find(name);
+      if (it != arrayShapes.end())
+          return &it->second;
+      if (parent)
+          return parent->lookupArrayShape(name);
+      return nullptr;
+  }
+
   std::shared_ptr<SymbolTable> createChild() {
 	return std::make_shared<SymbolTable>(std::make_shared<SymbolTable>(*this));
   }
