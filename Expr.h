@@ -255,7 +255,8 @@ public:
 
     virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {
         VariableExpr* baseVar = unwrapBaseVariable(arrayExpr.get());
-        shape = symTable->arrayShapes[baseVar->name];
+        ArrayShape* sh = symTable->lookupArrayShapes(baseVar->name);
+        shape = sh ? *sh : ArrayShape{};
 
         Type indexType = indexExpr->analyzeAst(symTable);
         if (indexType != Type::NUM) {
@@ -313,72 +314,67 @@ public:
     }
 
     void getAddress(QbeCodeGen& codeGen, int indent = 0) {
-        VariableExpr* baseVar = unwrapBaseVariable(arrayExpr.get());
-        if (!baseVar) {
-            throw std::runtime_error("Array access base must be a variable or array access");
-        }
+    VariableExpr* baseVar = unwrapBaseVariable(arrayExpr.get());
+    if (!baseVar) {
+        throw std::runtime_error("Array access base must be a variable or array access");
+    }
 
-        std::string varName = baseVar->name;
-        std::string arrayVar = codeGen.varMap[varName]; // base pointer to flat storage
+    std::string varName = baseVar->name;
+    std::string arrayVar = codeGen.varMap[varName];
 
-        int sizeofType = codeGen.toQbeSize(arrayType);
+    int sizeofType = codeGen.toQbeSize(arrayType);
 
-        // If we are doing arr[i][j], then `arrayExpr` is itself an ArrayAccessExpr (the inner [i]).
-        if (auto inner = dynamic_cast<ArrayAccessExpr*>(arrayExpr.get())) {
-            // Emit i from inner->indexExpr
-            inner->indexExpr->Emit(codeGen, indent);
-            std::string iVar = codeGen.lastValue;
+    if (auto inner = dynamic_cast<ArrayAccessExpr*>(arrayExpr.get())) {
+        inner->indexExpr->Emit(codeGen, indent);
+        std::string iVar = codeGen.lastValue;
 
-            // Emit j from this->indexExpr
-            indexExpr->Emit(codeGen, indent);
-            std::string jVar = codeGen.lastValue;
-
-            // Get cols for this array (must be stored when declaring [[T, cols], rows])
-            int cols = shape.cols;
-
-            // flatIdx = i*cols + j
-            std::string mulVar = codeGen.newTempVar();
-            codeGen.emitIndent(indent);
-            codeGen.emitArithmetic(mulVar, iVar, std::to_string(cols), "*");
-
-            std::string flatIdx = codeGen.newTempVar();
-            codeGen.emitIndent(indent);
-            codeGen.emitArithmetic(flatIdx, mulVar, jVar, "+");
-
-            // offset = flatIdx * sizeofType
-            std::string offsetVar = codeGen.newTempVar();
-            codeGen.emitIndent(indent);
-            codeGen.emitArithmetic(offsetVar, flatIdx, std::to_string(sizeofType), "*");
-
-            std::string extendedOffset = codeGen.newTempVar();
-            codeGen.emitIndent(indent);
-            codeGen.output << extendedOffset << " =l extsw " << offsetVar << "\n";
-
-            std::string elementPtr = codeGen.newTempVar();
-            codeGen.emitIndent(indent);
-            codeGen.emitArithmetic(elementPtr, arrayVar, extendedOffset, "+", true);
-
-            codeGen.lastValue = elementPtr;
-            return;
-        }
-
-        // 1D case: arr[idx]
         indexExpr->Emit(codeGen, indent);
-        std::string indexVar = codeGen.lastValue;
+        std::string jVar = codeGen.lastValue;
 
-        std::string offsetVar = codeGen.newTempVar();
-        codeGen.emitIndent(indent);
-        codeGen.emitArithmetic(offsetVar, indexVar, std::to_string(sizeofType), "*");
+        int cols = shape.cols;
 
-        std::string extendedOffset = codeGen.newTempVar();
+        std::string rowBase = codeGen.newTempVar();
         codeGen.emitIndent(indent);
-        codeGen.output << extendedOffset << " =l extsw " << offsetVar << "\n";
+        codeGen.emitArithmetic(rowBase, iVar, std::to_string(cols), "*");
+
+        std::string flatIdx = codeGen.newTempVar();
+        codeGen.emitIndent(indent);
+        codeGen.emitArithmetic(flatIdx, rowBase, jVar, "+");
+
+        std::string offsetW = codeGen.newTempVar();
+        codeGen.emitIndent(indent);
+        codeGen.emitArithmetic(offsetW, flatIdx, std::to_string(sizeofType), "*");
+
+        std::string offsetL = codeGen.newTempVar();
+        codeGen.emitIndent(indent);
+        codeGen.output << offsetL << " =l extsw " << offsetW << "\n";
 
         std::string elementPtr = codeGen.newTempVar();
         codeGen.emitIndent(indent);
-        codeGen.emitArithmetic(elementPtr, arrayVar, extendedOffset, "+", true);
+        codeGen.emitArithmetic(elementPtr, arrayVar, offsetL, "+", true);
 
         codeGen.lastValue = elementPtr;
+        return;
     }
-    virtual bool isAddress() const override { return true; }
+
+    indexExpr->Emit(codeGen, indent);
+    std::string indexVar = codeGen.lastValue;
+
+    std::string offsetW = codeGen.newTempVar();
+    codeGen.emitIndent(indent);
+    codeGen.emitArithmetic(offsetW, indexVar, std::to_string(sizeofType), "*");
+
+    std::string offsetL = codeGen.newTempVar();
+    codeGen.emitIndent(indent);
+    codeGen.output << offsetL << " =l extsw " << offsetW << "\n";
+
+    std::string elementPtr = codeGen.newTempVar();
+    codeGen.emitIndent(indent);
+    codeGen.emitArithmetic(elementPtr, arrayVar, offsetL, "+", true);
+
+    codeGen.lastValue = elementPtr;
+  }
+
+  virtual bool isAddress() const override { return true; }
+
 };

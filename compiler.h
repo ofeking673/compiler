@@ -13,7 +13,7 @@ public:
         }
     }
 
-    static void processFile(const std::string& filePath, bool buildLib, QbeCodeGen& gen)
+    static void processFile(const std::string& filePath, bool buildLib, QbeCodeGen& gen, std::set<std::string>& imports)
     {
         std::string dir  = dirOf(filePath);
         std::string base = baseNoExtOf(filePath);
@@ -36,7 +36,6 @@ public:
             return;
 		}
 
-        std::set<std::string> imports = findImports(gen.output.str());
 
         std::string exePath = dir + "/" + base;
         std::string linkCmd = "gcc -o \"" + exePath + "\" \"" + objPath + "\"";
@@ -49,28 +48,14 @@ public:
         runOrFail(linkCmd);
         std::cout << "Built executable: " << exePath << "\n";
     }
-
-    static std::set<std::string> findImports(const std::string& source) {
+    
+    static std::set<std::string> findImports(Program* program) {
         std::set<std::string> out;
 
-        size_t pos = 0;
-        while (pos < source.size()) {
-            size_t end = source.find('\n', pos);
-            if (end == std::string::npos) end = source.size();
-            std::string line = source.substr(pos, end - pos);
-
-            size_t i = 0;
-            while (i < line.size() && (line[i] == ' ' || line[i] == '\t' || line[i] == '\r')) i++;
-
-            const std::string kw = "import ";
-            if (line.compare(i, kw.size(), kw) == 0) {
-                i += kw.size();
-                size_t j = i;
-                while (j < line.size() && (std::isalnum((unsigned char)line[j]) || line[j] == '_')) j++;
-                if (j > i) out.insert(line.substr(i, j - i));
+        for (const auto& stmt : program->stmt) {
+            if (auto importStmt = dynamic_cast<ImportStmt*>(stmt.get())) {
+                out.insert(importStmt->moduleName);
             }
-
-            pos = (end == source.size()) ? source.size() : end + 1;
         }
 
         return out;
