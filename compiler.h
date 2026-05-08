@@ -32,12 +32,24 @@ public:
 
         gen.produceFinalFile(ssaPath);
 
+        // Summary: Lower SSA to assembly with qbe.
+        // Input: generated .ssa path.
+        // Output: architecture assembly file (.s).
         runOrFail("qbe -o \"" + asmPath + "\" \"" + ssaPath + "\"");
+        // Summary: Assemble/compile assembly into a relocatable object.
+        // Input: generated .s path.
+        // Output: object file (.o).
         runOrFail("gcc -c -o \"" + objPath + "\" \"" + asmPath + "\"");
 
         if (buildLib) {
 			std::string libPath = dir + "/" + base + ".a";
+            // Summary: Create static archive from object file.
+            // Input: object file (.o).
+            // Output: static library archive (.a).
 			runOrFail("ar rcs \"" + libPath + "\" \"" + objPath + "\"");
+            // Summary: Refresh archive index for linker symbol lookup.
+            // Input: static library archive (.a).
+            // Output: indexed archive ready for linking.
             runOrFail("ranlib \"" + libPath + "\"");
             std::cout << "Built library: " << libPath << "\n";
             return;
@@ -52,6 +64,9 @@ public:
             linkCmd += " \"" + lib + "\"";
         }
 
+        // Summary: Link object file and imported static libraries into an executable.
+        // Input: main object file plus resolved `.a` libraries.
+        // Output: runnable executable.
         runOrFail(linkCmd);
         std::cout << "Built executable: " << exePath << "\n";
     }
