@@ -1,6 +1,7 @@
 #pragma once
 #include "Stmt.h"
 
+// Legacy array AST nodes; current parser primarily uses the implementations in Expr.h/Stmt.h.
 class ArrayDeclStmt : public Stmt {
 public:
 	std::string name;

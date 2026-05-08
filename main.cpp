@@ -3,6 +3,7 @@
 #include "fileIO.h"
 #include "compiler.h"
 
+// Compiler CLI entrypoint: parse, analyze, emit, and invoke backend toolchain.
 int main(int argc, char* argv[]) {
 
     if (argc < 2) {

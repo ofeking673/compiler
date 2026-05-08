@@ -8,6 +8,7 @@
 
 using string = std::string;
 
+// Token categories emitted by the lexer.
 enum class TokenType {
   KEYWORD,
   IDENTIFIER,
@@ -19,6 +20,7 @@ enum class TokenType {
   IMPORT
 };
 
+// Human-readable token type labels for debug output.
 std::string getTokenTypeName(TokenType type) {
   switch (type) {
     case TokenType::KEYWORD:
@@ -42,6 +44,7 @@ std::string getTokenTypeName(TokenType type) {
   }
 }
 
+// Single lexical token with source location.
 struct Token {
   TokenType type;
   string value;
@@ -50,6 +53,7 @@ struct Token {
   int column = 0;
 };
 
+// Source lexer that tokenizes the FG language input.
 class Lexer {
 public:
   // Initialize the lexer source string (This will be read from the file)

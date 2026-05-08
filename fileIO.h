@@ -2,6 +2,7 @@
 #include <iostream>
 
 
+// Minimal file reader used by the compiler frontend.
 class FileIO {
 public:
   FileIO() = default;

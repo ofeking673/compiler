@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+// Semantic types supported by the language.
 enum Type {
     NUM,
     STRING,
@@ -12,6 +13,7 @@ enum Type {
     ARRAY,
 };
 
+// Converts source-level type names to semantic enum values.
 Type stringToType(const std::string& typeStr) {
 	if (typeStr == "num") return Type::NUM;
 	else if (typeStr == "str") return Type::STRING;
@@ -22,6 +24,7 @@ Type stringToType(const std::string& typeStr) {
 	throw std::invalid_argument("Unknown type: " + typeStr);
 }
 
+// Symbol metadata tracked during semantic analysis and codegen preparation.
 struct Symbol {
     std::string name;
     Type type;
@@ -31,12 +34,14 @@ struct Symbol {
     bool isArray = false;
 };
 
+// Shape metadata for 1D/2D arrays.
 struct ArrayShape {
     int dims = 1;
     int rows = -1;
     int cols = -1;
 };
 
+// Hierarchical symbol table used for lexical scopes.
 class SymbolTable {
 public:
   std::map<std::string, Symbol> symbolTable;

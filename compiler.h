@@ -3,6 +3,7 @@
 #include <iostream>
 #include <set>
 
+// Build orchestration helpers that turn emitted SSA into a library or executable.
 class compiler {
 public:
     static void runOrFail(const std::string& cmd) {

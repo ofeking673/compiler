@@ -3,6 +3,7 @@
 #include "Stmt.h"
 #include <memory>
 
+// Function parameter description used by function declarations.
 struct Parameter {
   std::string name;
   std::string type;
@@ -10,12 +11,14 @@ struct Parameter {
   Parameter(const std::string& n, const std::string& t) : name(n), type(t) {}
 };
 
+// Base expression node.
 class Expr : public ASTNode {
 public:
   virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override { return Type::VOID; }
   virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {}
 };
 
+// Numeric literal expression.
 class NumberExpr : public Expr {
 public:
   int value;
@@ -34,6 +37,7 @@ public:
   }
 };
 
+// String literal expression.
 class StringExpr : public Expr {
 public:
   std::string value;
@@ -58,6 +62,7 @@ public:
   virtual bool isAddress() const override { return true; }
 };
 
+// Boolean literal expression.
 class BooleanExpr : public Expr {
 public:
     bool value;
@@ -77,6 +82,7 @@ public:
 	}
 };
 
+// Variable reference expression.
 class VariableExpr : public Expr {
 public:
   std::string name;
@@ -99,6 +105,7 @@ public:
   }
 };
 
+// Binary operation expression (arithmetic/comparison/range).
 class BinaryExpr : public Expr {
 public:
   std::string op;
@@ -158,6 +165,7 @@ public:
   }
 };
 
+// Function call expression.
 class FuncCallExpr : public Expr {
 public:
     std::string funcName;
@@ -235,6 +243,7 @@ public:
 	}
 };
 
+// Array indexing expression, including nested indexing.
 class ArrayAccessExpr : public Expr {
 public:
     std::unique_ptr<Expr> arrayExpr;

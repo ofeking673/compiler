@@ -2,6 +2,8 @@
 #include "program.h"
 #include "lexer.h"
 #include "Stmt.h"
+
+// Recursive-descent parser that builds the AST from lexer tokens.
 class Parser {
 public:
   Parser(std::vector<Token> tok) : toks(tok) {}

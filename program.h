@@ -1,6 +1,7 @@
 #include "Stmt.h"
 #include <vector>
 
+// AST root containing top-level statements.
 class Program : public ASTNode {
 public:
   std::vector<std::unique_ptr<Stmt>> stmt;

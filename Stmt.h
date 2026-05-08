@@ -4,12 +4,14 @@
 #include <vector>
 #include <optional>
 
+// Base statement node.
 class Stmt : public ASTNode {
 public:
   virtual Type analyzeAst(std::shared_ptr<SymbolTable> symTable) override {return Type::VOID; };
   virtual void Emit(QbeCodeGen& codeGen, int indent=0) override {};
 };
 
+// Return statement.
 class ReturnStmt : public Stmt {
 public:
   std::unique_ptr<Expr> expr;
@@ -32,6 +34,7 @@ public:
   }
 };
 
+// Variable declaration statement.
 class VarDeclStmt : public Stmt {
 public:
   std::string name;
@@ -102,6 +105,7 @@ public:
   }
 };
 
+// Block node that owns an ordered list of statements.
 class codeBlock : public Expr {
 public:
   std::vector<std::unique_ptr<Stmt>> stmts;
@@ -134,6 +138,7 @@ public:
   }
 };
 
+// Function declaration statement.
 class FuncDeclStmt : public Stmt {
 public:
     std::string name;
@@ -231,6 +236,7 @@ public:
 	  }
 };
 
+// Standalone expression statement.
 class ExprStmt : public Stmt {
 public:
   std::unique_ptr<Expr> expr;
@@ -252,6 +258,7 @@ public:
   }
 };
 
+// Variable assignment statement.
 class AssignStmt : public Stmt {
 public:
     std::string name; // Variable name being assigned
@@ -305,6 +312,7 @@ public:
     }
 };
 
+// Array element assignment statement.
 class ArrayAssignStmt : public Stmt {
 public:
     std::unique_ptr<ArrayAccessExpr> access;
@@ -361,6 +369,7 @@ public:
     }
 };
 
+// For-loop statement over a numeric range.
 class ForLoopStmt : public Stmt {
 public:
     std::string varName;
@@ -435,6 +444,7 @@ public:
     }
 };
 
+// While-loop statement.
 class WhileLoopStmt : public Stmt {
 public:
     std::unique_ptr<Expr> condition;
@@ -488,6 +498,7 @@ public:
     }
 };
 
+// If/else statement.
 class IfStmt : public Stmt {
 public:
     std::unique_ptr<Expr> condition;
@@ -549,6 +560,7 @@ public:
 	}
 };
 
+// Import statement for local modules.
 class ImportStmt : public Stmt {
 public:
     std::string moduleName;
@@ -570,6 +582,7 @@ public:
     }
 };
 
+// Array declaration statement (1D or flattened 2D storage).
 class ArrayDeclStmt : public Stmt {
 public:
     std::string name;

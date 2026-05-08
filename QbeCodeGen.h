@@ -6,6 +6,7 @@
 
 #include "SymbolTable.h"
 
+// QBE IR emitter and small state container for code generation.
 class QbeCodeGen {
 public:
 	std::ostringstream output;
