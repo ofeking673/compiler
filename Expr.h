@@ -243,7 +243,7 @@ public:
 	}
 };
 
-// Array indexing expression, including nested indexing.
+// Array indexing expression, including chained multidimensional-style accesses like arr[i][j].
 class ArrayAccessExpr : public Expr {
 public:
     std::unique_ptr<Expr> arrayExpr;
