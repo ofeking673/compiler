@@ -7,6 +7,9 @@ class FileIO {
 public:
   FileIO() = default;
 
+  // Summary: Reads full text content of a file into memory.
+  // Input: path to the source file.
+  // Output: file contents as a single string, or empty string on failure.
   std::string readFile(std::string filename) {
     std::fstream fileToRead(filename);
     

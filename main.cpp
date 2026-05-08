@@ -3,7 +3,9 @@
 #include "fileIO.h"
 #include "compiler.h"
 
-// Compiler CLI entrypoint: parse, analyze, emit, and invoke backend toolchain.
+// Summary: CLI entrypoint that runs lexing, parsing, semantic checks, codegen, and backend build steps.
+// Input: argv with `compile [--lib] <file.fg>`.
+// Output: process exit code (0 on success, non-zero on error) and generated artifacts on disk.
 int main(int argc, char* argv[]) {
 
     if (argc < 2) {

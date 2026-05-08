@@ -14,6 +14,9 @@ enum Type {
 };
 
 // Converts source-level type names to semantic enum values.
+// Summary: Converts parser type text to internal enum.
+// Input: source-level type string (e.g. "num", "str").
+// Output: corresponding Type enum value, or throws for unknown input.
 Type stringToType(const std::string& typeStr) {
 	if (typeStr == "num") return Type::NUM;
 	else if (typeStr == "str") return Type::STRING;
@@ -51,6 +54,9 @@ public:
 
   SymbolTable(std::shared_ptr<SymbolTable> p = nullptr) : parent(p) {}
 
+  // Summary: Inserts a symbol into the current scope only.
+  // Input: symbol metadata to register.
+  // Output: true on success, false when symbol already exists in this scope.
   bool insert(const Symbol& sym) {
     if (symbolTable.find(sym.name) != symbolTable.end()) {
       return false; // Symbol already exists
@@ -59,6 +65,9 @@ public:
     return true;
   }
   
+  // Summary: Resolves array shape metadata through current and parent scopes.
+  // Input: symbol name.
+  // Output: pointer to ArrayShape if found, otherwise nullptr.
   ArrayShape* lookupArrayShapes(const std::string& name) {
         auto it = arrayShapes.find(name);
         if (it != arrayShapes.end()) {
@@ -69,6 +78,9 @@ public:
         }
         return nullptr;
     }
+  // Summary: Resolves symbol through current and parent scopes.
+  // Input: symbol name.
+  // Output: pointer to Symbol if found, otherwise nullptr.
   Symbol* lookup(const std::string& name) {
       auto it = symbolTable.find(name);
       if (it != symbolTable.end())
@@ -78,6 +90,9 @@ public:
       return nullptr;
   }
 
+  // Summary: Creates a child scope seeded from current scope snapshot.
+  // Input: none.
+  // Output: shared pointer to child SymbolTable.
   std::shared_ptr<SymbolTable> createChild() {
 	return std::make_shared<SymbolTable>(std::make_shared<SymbolTable>(*this));
   }
