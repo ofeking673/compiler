@@ -2,6 +2,7 @@
 #include <iostream>
 #include "QbeCodeGen.h"
 
+// Base abstraction for every AST node in the compiler pipeline.
 class ASTNode {
   public:
   virtual ~ASTNode() = default;

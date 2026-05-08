@@ -8,6 +8,7 @@
 
 using string = std::string;
 
+// Token categories emitted by the lexer.
 enum class TokenType {
   KEYWORD,
   IDENTIFIER,
@@ -19,6 +20,10 @@ enum class TokenType {
   IMPORT
 };
 
+// Human-readable token type labels for debug output.
+// Summary: Maps token enum values to readable names.
+// Input: token type enum.
+// Output: display label used in diagnostics/debugging.
 std::string getTokenTypeName(TokenType type) {
   switch (type) {
     case TokenType::KEYWORD:
@@ -42,6 +47,7 @@ std::string getTokenTypeName(TokenType type) {
   }
 }
 
+// Single lexical token with source location.
 struct Token {
   TokenType type;
   string value;
@@ -50,11 +56,15 @@ struct Token {
   int column = 0;
 };
 
+// Source lexer that tokenizes the FG language input.
 class Lexer {
 public:
   // Initialize the lexer source string (This will be read from the file)
   Lexer(string s) : src(move(s)) {}
 
+  // Summary: Produces the next token from source input.
+  // Input: none (uses lexer source buffer and cursor state).
+  // Output: next Token, or END token at EOF; throws on invalid characters.
   Token next() {
     skipWhitespace();
     char c = peek();
@@ -143,9 +153,18 @@ private:
   std::unordered_set<string> type_identifiers = {"num", "str", "bool"};
   std::unordered_set<string> literals = {"true", "false"};
 
+  // Summary: Returns current source character without consuming it.
+  // Input: none.
+  // Output: current character or '\0' at end-of-source.
   char peek() const { return pos < src.length() ? src[pos] : '\0'; }
+  // Summary: Consumes and returns current source character.
+  // Input: none.
+  // Output: consumed character or '\0' when out of range.
   char get() { return pos < src.length() ? src[pos++] : '\0'; }
   
+  // Summary: Skips whitespace while updating line/column location tracking.
+  // Input: none.
+  // Output: lexer cursor advanced to next non-whitespace character.
   void skipWhitespace() {
       while (isspace(peek()))
       {		

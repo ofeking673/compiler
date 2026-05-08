@@ -2,10 +2,15 @@
 #include "program.h"
 #include "lexer.h"
 #include "Stmt.h"
+
+// Recursive-descent parser that builds the AST from lexer tokens.
 class Parser {
 public:
   Parser(std::vector<Token> tok) : toks(tok) {}
   
+  // Summary: Consumes the next token after validating expected type/value constraints.
+  // Input: expected token type and optional exact token value.
+  // Output: the consumed token if validation succeeds, otherwise throws.
   Token consumeToken(TokenType type, const std::string& value = "") {
     Token tok = peek();
     if(tok.type != type)
@@ -15,14 +20,23 @@ public:
     return consume();
   }
 
+  // Summary: Advances parser position and returns the current token.
+  // Input: none (uses internal token stream state).
+  // Output: next token in sequence.
   Token consume() {
     return toks[pos++];
   }
 
+  // Summary: Reads the current token without advancing parser position.
+  // Input: none.
+  // Output: current token at parser cursor.
   Token peek() {
     return toks[pos];
   }
 
+  // Summary: Parses `let` variable declarations including scalar and array forms.
+  // Input: token stream positioned at `let`.
+  // Output: VarDeclStmt or ArrayDeclStmt AST node.
   std::unique_ptr<Stmt> parseVarDecl() {
     consume(); // consume 'let'
 
@@ -46,6 +60,9 @@ public:
     return std::make_unique<VarDeclStmt>(name, typeName, std::move(value));
   }
  
+  // Summary: Parses the full token stream into a Program AST.
+  // Input: parser-owned token stream ending with END token.
+  // Output: Program node containing ordered top-level statements.
   std::unique_ptr<Program> parseProgram() {
     auto program = std::make_unique<Program>();
 
@@ -64,6 +81,9 @@ public:
     return program;
   }
   
+  // Summary: Parses array declaration syntax and optional initializers.
+  // Input: declared variable name, with parser positioned after `name : [`.
+  // Output: ArrayDeclStmt node for 1D/2D array declarations.
   std::unique_ptr<Stmt> parseArrayDeclStmt(std::string name) {
       // We are at the point where we have consumed 'let name : ['
       if (peek().value == "[")
@@ -145,6 +165,9 @@ public:
       }
   }
 
+  // Summary: Dispatches parsing to the correct statement parser by current token.
+  // Input: token stream at statement start.
+  // Output: parsed statement node, or nullptr at END.
   std::unique_ptr<Stmt> parseStatement() {
     if (peek().type == TokenType::END) 
       return nullptr;
@@ -207,6 +230,9 @@ public:
     return std::make_unique<ExprStmt>(std::move(expr));
   }
   
+  // Summary: Parses function declarations including params, return type, and body.
+  // Input: token stream positioned at `fn`.
+  // Output: FuncDeclStmt node.
   std::unique_ptr<Stmt> parseFunction() {
     consumeToken(TokenType::KEYWORD, "fn");
     std::string funcName = consume().value;
@@ -241,6 +267,9 @@ public:
     return std::make_unique<FuncDeclStmt>(funcName, params, returnType, std::move(body));
   }
 
+  // Summary: Parses a `{ ... }` block into a codeBlock node.
+  // Input: token stream positioned at `{`.
+  // Output: codeBlock containing parsed child statements.
   std::unique_ptr<codeBlock> parseBlock() {
     consumeToken(TokenType::PUNCTUATION, "{");
     
@@ -255,6 +284,9 @@ public:
     return block;
   }
 
+  // Summary: Parses multiplicative-precedence expressions (`*`, `/`).
+  // Input: token stream at term start.
+  // Output: expression subtree honoring term precedence.
   std::unique_ptr<Expr> parseTerm() {
     auto node = parseFactor();
     while(peek().type == TokenType::OPERATOR &&
@@ -266,6 +298,9 @@ public:
     return node;
   }
   
+  // Summary: Parses `for var in start..end { ... }` loops.
+  // Input: token stream positioned at `for`.
+  // Output: ForLoopStmt node.
   std::unique_ptr<Stmt> parseForLoop() {
     consumeToken(TokenType::KEYWORD, "for");
 	std::string varName = consume().value;
@@ -281,6 +316,9 @@ public:
 	return std::make_unique<ForLoopStmt>(varName, std::move(s), std::move(e),std::move(body));
   }
 
+  // Summary: Parses `if` and optional `else` blocks.
+  // Input: token stream positioned at `if`.
+  // Output: IfStmt node with optional else block.
   std::unique_ptr<Stmt> parseIfStmt() {
       consumeToken(TokenType::KEYWORD, "if");
       auto condition = parseExpression();
@@ -295,6 +333,9 @@ public:
       return std::make_unique<IfStmt>(std::move(condition), std::move(thenBlock), std::move(elseBlock));
   }
 
+  // Summary: Parses `while` loop statements.
+  // Input: token stream positioned at `while`.
+  // Output: WhileLoopStmt node.
   std::unique_ptr<Stmt> parseWhileLoop() {
     consumeToken(TokenType::KEYWORD, "while");
     auto condition = parseExpression();
@@ -302,6 +343,9 @@ public:
     return std::make_unique<WhileLoopStmt>(std::move(condition), std::move(body));
   }
 
+  // Summary: Parses additive-precedence expressions (`+`, `-`).
+  // Input: token stream at expression start.
+  // Output: expression subtree for arithmetic/composite expressions.
   std::unique_ptr<Expr> parseExpression() {
     auto node = parseComparisonExpr();
     while(peek().type == TokenType::OPERATOR &&
@@ -313,6 +357,9 @@ public:
     return node;
   }
 
+  // Summary: Parses comparison operators (`==`, `!=`, `<`, `<=`, `>`, `>=`).
+  // Input: token stream at comparison expression start.
+  // Output: expression subtree representing chained comparisons.
   std::unique_ptr<Expr> parseComparisonExpr() {
       auto node = parseRangeExpr();
       while (peek().type == TokenType::OPERATOR &&
@@ -324,6 +371,9 @@ public:
       return node;
   }
 
+  // Summary: Parses range expressions using `..`.
+  // Input: token stream at range expression start.
+  // Output: BinaryExpr tree for range operations.
   std::unique_ptr<Expr> parseRangeExpr() {
       auto node = parseTerm();
       while (peek().type == TokenType::OPERATOR && peek().value == "..") {
@@ -334,6 +384,9 @@ public:
       return node;
   }
 
+  // Summary: Parses literals, parenthesized expressions, identifiers, and calls.
+  // Input: token stream at factor position.
+  // Output: factor-level expression node.
   std::unique_ptr<Expr> parseFactor() {
     Token tok = peek();
     std::string name;
@@ -363,6 +416,9 @@ public:
     }
   }
 
+  // Summary: Parses identifier usage as function call, variable, or array access chain.
+  // Input: identifier token captured from current parser position.
+  // Output: FuncCallExpr, VariableExpr, or ArrayAccessExpr chain.
   std::unique_ptr<Expr> parseIdentCall(Token tok) {
       std::string name = tok.value;
       consume();
@@ -407,6 +463,9 @@ private:
   int pos = 0;
   std::vector<Token> toks;
 
+  // Summary: Checks whether a token string is numeric.
+  // Input: candidate token text.
+  // Output: true for numeric strings, false otherwise.
   bool isNumber(string myString) {
       std::istringstream iss(myString);
       float f;

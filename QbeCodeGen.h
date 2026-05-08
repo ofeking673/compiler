@@ -6,6 +6,7 @@
 
 #include "SymbolTable.h"
 
+// QBE IR emitter and small state container for code generation.
 class QbeCodeGen {
 public:
 	std::ostringstream output;
@@ -20,20 +21,32 @@ public:
 
 	std::string lastValue;
 
+	// Summary: Allocates a unique temporary SSA variable name.
+	// Input: none.
+	// Output: fresh temp variable identifier (e.g. %.N).
 	std::string newTempVar() {
 		return "%." + std::to_string(labelCount++);
 	}
 
+	// Summary: Allocates a unique jump label name using a prefix.
+	// Input: label prefix string.
+	// Output: fresh QBE label identifier.
 	std::string newLabel(std::string name)
 	{
 		return "@" + name + std::to_string(tempCount++);
 	}
 
+	// Summary: Writes indentation spaces into the output stream.
+	// Input: indentation depth in logical units.
+	// Output: no return value; output stream is updated.
 	void emitIndent(int indent) {
 		for (int i = 0; i < indent; ++i)
 			output << "  ";
 	}
 
+	// Summary: Interns a string literal for later data section emission.
+	// Input: literal string value.
+	// Output: updates string literal table if value is new.
 	void RegisterStringLiteral(std::string& value)
 	{
 		if (stringLiteralNames.find(value) == stringLiteralNames.end()) {
@@ -42,6 +55,9 @@ public:
 		}
 	}
 
+	// Summary: Serializes data section and accumulated QBE body to a file.
+	// Input: output file path.
+	// Output: written SSA file on disk.
 	void produceFinalFile(std::string fileName)
 	{
 		std::ofstream outFile(fileName);
@@ -136,12 +152,18 @@ public:
 		}
 	}
 
+	// Summary: Emits function prologue for parameterless functions.
+	// Input: function name and return type.
+	// Output: function header in QBE output and function metadata entry.
 	void emitFunctionStart(const std::string& funcName, Type returnType) {
 		output << "export function " << toQbeType(returnType) <<  " $" << funcName << "() {\n";
 		output << "@start\n";
 		functionMap[funcName].push_back(std::make_pair(returnType, ""));
 	}
 
+	// Summary: Emits function prologue with typed parameters.
+	// Input: function name, return type, and ordered parameter list.
+	// Output: function header in QBE output and function metadata entry.
 	void emitFunctionStart(const std::string& funcName, Type returnType, std::vector<std::pair<Type, std::string>> params) {
 		output << "export function " << toQbeType(returnType) << " $" << funcName << "(";
 		for (size_t i = 0; i < params.size(); ++i) {
@@ -165,6 +187,9 @@ public:
 		output << "ret " << var << "\n";
 	}
 
+	// Summary: Emits a typed function call and stores result into resultVar.
+	// Input: callee name, evaluated argument registers, and destination register.
+	// Output: call instruction appended to output stream.
 	void emitFuncCall(const std::string& funcName, std::vector<std::string> argRegs, const std::string& resultVar) {
 		auto func = functionMap[funcName];
 	
@@ -198,6 +223,9 @@ public:
 		output << ")\n";
 	}
 
+	// Summary: Emits arithmetic instruction for integers or pointer arithmetic.
+	// Input: destination var, lhs/rhs operands, operator symbol, pointer-mode flag.
+	// Output: arithmetic QBE instruction in output stream.
 	void emitArithmetic(const std::string& resultVar, const std::string& lhs, const std::string& rhs, const std::string& op, bool isPointer = false)
 	{
 		std::cout << isPointer << "\n";
@@ -217,6 +245,9 @@ public:
 		
 	}
 
+	// Summary: Emits comparison instruction producing boolean-like word result.
+	// Input: destination var, lhs/rhs operands, comparison operator.
+	// Output: comparison QBE instruction in output stream.
 	void emitComparison(const std::string& resultVar, const std::string& lhs, const std::string& rhs, const std::string& op)
 	{
 		std::string qbeOp = "c";
@@ -233,6 +264,9 @@ public:
 		output << resultVar << " =w " << qbeOp << "w " << lhs << ", " << rhs << "\n";
 	}
 
+	// Summary: Maps semantic types to QBE register type codes.
+	// Input: internal Type enum value.
+	// Output: QBE type string ("w", "b", or "l").
 	std::string toQbeType(const Type& varType) {
 		if (varType == Type::NUM) return "w";
 		else if (varType == Type::BOOL) return "w";
@@ -241,6 +275,9 @@ public:
 		return "w"; // default
 	}
 
+	// Summary: Maps semantic types to byte sizes used by allocations.
+	// Input: internal Type enum value.
+	// Output: allocation size in bytes.
 	int toQbeSize(const Type& varType) {
 		if (varType == Type::STRING) return 8;	
 		return 4; // default
