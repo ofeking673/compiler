@@ -1,0 +1,5 @@
+export function w $add(w %x, w %y) {
+@start
+    %.0 =w add %x, %y
+    ret %.0
+}
